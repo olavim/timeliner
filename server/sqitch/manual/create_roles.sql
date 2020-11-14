@@ -1,15 +1,15 @@
--- Create outliner and outliner_rw roles for outliner schemas
+-- Create timeliner and timeliner_rw roles for timeliner schemas
 
 BEGIN;
 
 DO
 $do$
 BEGIN
-   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'outliner') THEN
-      CREATE ROLE outliner NOLOGIN;
+   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'timeliner') THEN
+      CREATE ROLE timeliner NOLOGIN;
    END IF;
-   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'outliner_rw') THEN
-		CREATE ROLE outliner_rw LOGIN PASSWORD 'outliner';
+   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'timeliner_rw') THEN
+		CREATE ROLE timeliner_rw LOGIN PASSWORD 'timeliner';
    END IF;
 END
 $do$;

@@ -1,7 +1,7 @@
--- Revert outliner:outline from pg
+-- Revert timeliner:timeline from pg
 
 BEGIN;
 
-DROP TABLE IF EXISTS outliner.outline;
+DROP TABLE IF EXISTS timeliner.timeline;
 
 COMMIT;

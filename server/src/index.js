@@ -92,40 +92,40 @@ app.get('/', (req, res) => {
 	res.json({status: 'ok'});
 });
 
-app.get('/outlines', [checkJwt, userInfo], async (req, res) => {
-	const outlines = await pg('outliner.outline')
+app.get('/timelines', [checkJwt, userInfo], async (req, res) => {
+	const timelines = await pg('timeliner.timeline')
 		.select(['id', 'name', 'created_at', 'updated_at'])
 		.where('user_email', req.user.email)
 		.orderBy('created_at', 'desc');
 
-	res.json({outlines: outlines.map(o => ({
-		id: o.id,
-		name: o.name,
-		createdAt: o.created_at,
-		updatedAt: o.updated_at
+	res.json({timelines: timelines.map(t => ({
+		id: t.id,
+		name: t.name,
+		createdAt: t.created_at,
+		updatedAt: t.updated_at
 	}))});
 });
 
-app.get('/outlines/:id', [checkJwt, userInfo], async (req, res) => {
-	const outlines = await pg('outliner.outline')
+app.get('/timelines/:id', [checkJwt, userInfo], async (req, res) => {
+	const timelines = await pg('timeliner.timeline')
 		.where('user_email', req.user.email)
 		.where('id', req.params.id);
 
-	const o = outlines[0];
+	const t = timelines[0];
 
 	res.json({
-		outline: {
-			id: o.id,
-			name: o.name,
-			data: o.data,
-			createdAt: o.created_at,
-			updatedAt: o.updated_at
+		timeline: {
+			id: t.id,
+			name: t.name,
+			data: t.data,
+			createdAt: t.created_at,
+			updatedAt: t.updated_at
 		}
 	});
 });
 
-app.post('/outlines', [checkJwt, userInfo], async (req, res) => {
-	const outlines = await pg('outliner.outline')
+app.post('/timelines', [checkJwt, userInfo], async (req, res) => {
+	const timelines = await pg('timeliner.timeline')
 		.insert({
 			user_email: req.user.email, // eslint-disable-line camelcase
 			name: req.body.name,
@@ -133,11 +133,11 @@ app.post('/outlines', [checkJwt, userInfo], async (req, res) => {
 		})
 		.returning('*');
 
-	res.json({outline: outlines[0]});
+	res.json({timeline: timelines[0]});
 });
 
-app.patch('/outlines/:id', [checkJwt, userInfo], async (req, res) => {
-	const outlines = await pg('outliner.outline')
+app.patch('/timelines/:id', [checkJwt, userInfo], async (req, res) => {
+	const timelines = await pg('timeliner.timeline')
 		.where('user_email', req.user.email)
 		.where('id', req.params.id)
 		.update({
@@ -146,11 +146,11 @@ app.patch('/outlines/:id', [checkJwt, userInfo], async (req, res) => {
 		})
 		.returning('*');
 
-	res.json({outline: outlines[0]});
+	res.json({timeline: timelines[0]});
 });
 
-app.delete('/outlines/:id', [checkJwt, userInfo], async (req, res) => {
-	await pg('outliner.outline')
+app.delete('/timelines/:id', [checkJwt, userInfo], async (req, res) => {
+	await pg('timeliner.timeline')
 		.where('user_email', req.user.email)
 		.where('id', req.params.id)
 		.delete();

@@ -1,7 +1,7 @@
--- Revert outliner:updatedatfunc from pg
+-- Revert timeliner:updatedatfunc from pg
 
 BEGIN;
 
-DROP FUNCTION outliner.refresh_updated_at();
+DROP FUNCTION timeliner.refresh_updated_at();
 
 COMMIT;

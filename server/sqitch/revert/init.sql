@@ -1,7 +1,7 @@
--- Revert outliner:init from pg
+-- Revert timeliner:init from pg
 
 BEGIN;
 
-DROP SCHEMA outliner;
+DROP SCHEMA timeliner;
 
 COMMIT;

@@ -1,8 +1,8 @@
--- Deploy outliner:updatedatfunc to pg
+-- Deploy timeliner:updatedatfunc to pg
 
 BEGIN;
 
-CREATE OR REPLACE FUNCTION outliner.refresh_updated_at()
+CREATE OR REPLACE FUNCTION timeliner.refresh_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
 	NEW.updated_at = now();

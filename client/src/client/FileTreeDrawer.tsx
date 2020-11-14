@@ -25,7 +25,7 @@ import FileIcon from '@material-ui/icons/InsertDriveFile';
 import EditIcon from '@material-ui/icons/Edit';
 import DeleteIcon from '@material-ui/icons/Delete';
 import withAuth, {WithAuthProps} from '@/hocs/with-auth';
-import {ListOutline, GetOutline} from '@/App';
+import {ListTimeline, GetTimeline} from '@/App';
 
 const styles = createStyles({
 	drawerPaper: {
@@ -128,12 +128,12 @@ interface OwnProps {
 	onOpenMenu: () => void;
 	onOpen: (evt: any) => void;
 	onClose: (evt: any) => void;
-	onNewOutline: (name: string) => void;
-	onRenameOutline: (name: string) => void;
-	onDeleteOutline: () => void;
-	onOpenOutline: (id: string) => void;
-	outlines: ListOutline[];
-	outline?: GetOutline;
+	onNewTimeline: (name: string) => void;
+	onRenameTimeline: (name: string) => void;
+	onDeleteTimeline: () => void;
+	onOpenTimeline: (id: string) => void;
+	timelines: ListTimeline[];
+	timeline?: GetTimeline;
 }
 
 interface State {
@@ -162,7 +162,7 @@ class FileTreeDrawer extends React.Component<Props> {
 	}
 
 	public handleOpenRenameDialog = () => {
-		this.setState({showRenameDialog: true, nameStr: this.props.outline!.name || ''});
+		this.setState({showRenameDialog: true, nameStr: this.props.timeline!.name || ''});
 	}
 
 	public handleCloseRenameDialog = () => {
@@ -185,19 +185,19 @@ class FileTreeDrawer extends React.Component<Props> {
 		this.setState({nameStr: ''});
 	}
 
-	public handleRenameOutline = () => {
-		this.props.onRenameOutline(this.state.nameStr);
+	public handleRenameTimeline = () => {
+		this.props.onRenameTimeline(this.state.nameStr);
 		this.handleCloseRenameDialog();
 	};
 
-	public handleNewOutline = () => {
-		this.props.onNewOutline(this.state.nameStr);
+	public handleNewTimeline = () => {
+		this.props.onNewTimeline(this.state.nameStr);
 		this.handleCloseNewDialog();
 	};
 
-	public handleDeleteOutline = () => {
+	public handleDeleteTimeline = () => {
 		this.setState({showConfirmDialog: false}, () => {
-			this.props.onDeleteOutline();
+			this.props.onDeleteTimeline();
 		});
 	};
 
@@ -209,9 +209,9 @@ class FileTreeDrawer extends React.Component<Props> {
 			open,
 			onOpen,
 			onClose,
-			onOpenOutline,
-			outlines,
-			outline
+			onOpenTimeline,
+			timelines,
+			timeline
 		} = this.props;
 		const {showConfirmDialog, showNewDialog, showRenameDialog, nameStr} = this.state;
 
@@ -240,13 +240,13 @@ class FileTreeDrawer extends React.Component<Props> {
 					<Divider/>
 				</Hidden>
 				<List className={classes.fileTreeList}>
-					{outlines.map(o => (
+					{timelines.map(o => (
 						<ListItem
 							button
 							className={classes.fileTreeItem}
 							classes={{selected: classes.active}}
-							onClick={() => onOpenOutline(o.id)}
-							selected={outline && o.id === outline.id}
+							onClick={() => onOpenTimeline(o.id)}
+							selected={timeline && o.id === timeline.id}
 							key={o.id}
 							title={o.name}
 						>
@@ -308,7 +308,7 @@ class FileTreeDrawer extends React.Component<Props> {
 							Cancel
 						</Button>
 						<Button
-							onClick={this.handleNewOutline}
+							onClick={this.handleNewTimeline}
 							color="primary"
 							className={classes.dialogButton}
 							disabled={!this.state.nameStr}
@@ -340,7 +340,7 @@ class FileTreeDrawer extends React.Component<Props> {
 							Cancel
 						</Button>
 						<Button
-							onClick={this.handleRenameOutline}
+							onClick={this.handleRenameTimeline}
 							color="primary"
 							className={classes.dialogButton}
 							disabled={!this.state.nameStr}
@@ -366,7 +366,7 @@ class FileTreeDrawer extends React.Component<Props> {
 						<Button onClick={this.handleCloseConfirmDialog} color="primary" className={classes.dialogButton}>
 							Cancel
 						</Button>
-						<Button onClick={this.handleDeleteOutline} color="primary" className={classes.dialogButton} autoFocus>
+						<Button onClick={this.handleDeleteTimeline} color="primary" className={classes.dialogButton} autoFocus>
 							Delete
 						</Button>
 					</DialogActions>

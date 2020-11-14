@@ -1,4 +1,4 @@
--- Verify outliner:outline on pg
+-- Verify timeliner:timeline on pg
 
 BEGIN;
 

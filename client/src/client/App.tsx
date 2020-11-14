@@ -54,7 +54,7 @@ const styles = createStyles({
 		alignItems: 'center',
 		boxShadow: '0 0 0.6rem 0 rgba(0,0,0,0.4)',
 		zIndex: 100,
-		'& .outline': {
+		'& .timeline': {
 			marginRight: '1rem',
 			minHeight: '2.6rem'
 		},
@@ -174,14 +174,14 @@ const styles = createStyles({
 	}
 });
 
-export interface ListOutline {
+export interface ListTimeline {
 	id: string;
 	name: string;
 	createdAt: string;
 	updatedAt?: string;
 }
 
-export interface GetOutline {
+export interface GetTimeline {
 	data: BlockData[];
 	id?: string;
 	name?: string;
@@ -191,8 +191,8 @@ export interface GetOutline {
 
 interface State {
 	fontsLoaded: boolean;
-	outline?: GetOutline;
-	availableOutlines: ListOutline[];
+	timeline?: GetTimeline;
+	availableTimelines: ListTimeline[];
 	nameStr: string;
 	loading: boolean;
 	exporting: boolean;
@@ -219,7 +219,7 @@ class App extends React.Component<AppProps, State> {
 
 	public state: State = {
 		fontsLoaded: false,
-		availableOutlines: [],
+		availableTimelines: [],
 		nameStr: '',
 		loading: true,
 		exporting: false,
@@ -267,8 +267,8 @@ class App extends React.Component<AppProps, State> {
 		if (this.props.auth.isAuthenticated) {
 			this.handleList(true);
 		} else {
-			const data = localStorage.getItem('outliner-data');
-			this.setState({outline: data ? JSON.parse(data) : {data: []}, loading: false});
+			const data = localStorage.getItem('timeliner-data');
+			this.setState({timeline: data ? JSON.parse(data) : {data: []}, loading: false});
 		}
 	}
 
@@ -286,19 +286,19 @@ class App extends React.Component<AppProps, State> {
 	}
 
 	public handleBlocksChange = (data: BlockData[]) => {
-		const outline = cloneDeep(this.state.outline);
-		outline!.data = data;
+		const timeline = cloneDeep(this.state.timeline);
+		timeline!.data = data;
 
 		if (this.props.auth.isAuthenticated) {
 			this.handleSave();
 		} else {
-			localStorage.setItem('outliner-data', JSON.stringify(outline));
+			localStorage.setItem('timeliner-data', JSON.stringify(timeline));
 		}
 
-		this.setState({outline});
+		this.setState({timeline});
 	}
 
-	public handleImportOutline = (evt: React.ChangeEvent<HTMLInputElement>) => {
+	public handleImportTimeline = (evt: React.ChangeEvent<HTMLInputElement>) => {
 		const fileElem = evt.target;
 		if (fileElem && fileElem.files && fileElem.files[0]) {
 			const file = fileElem.files[0];
@@ -306,22 +306,22 @@ class App extends React.Component<AppProps, State> {
 			reader.readAsText(file, 'UTF-8');
 			reader.onload = async () => {
 				const data = reader.result as string;
-				const newOutline = {
+				const newTimeline = {
 					name: file.name.replace(/\.[^/.]+$/, '') || 'untitled',
 					data: JSON.parse(data)
 				};
 
-				let outline: GetOutline;
+				let timeline: GetTimeline;
 
 				if (this.props.auth.isAuthenticated) {
-					const {data} = await this.api.post('/outlines', newOutline);
-					outline = data.outline;
+					const {data} = await this.api.post('/timelines', newTimeline);
+					timeline = data.timeline;
 				} else {
-					outline = newOutline;
+					timeline = newTimeline;
 				}
 
-				this.setState({outline, showDrawer: false}, () => {
-					localStorage.setItem('outliner-data', JSON.stringify(outline));
+				this.setState({timeline, showDrawer: false}, () => {
+					localStorage.setItem('timeliner-data', JSON.stringify(timeline));
 
 					if (this.props.auth.isAuthenticated) {
 						this.handleList();
@@ -347,10 +347,10 @@ class App extends React.Component<AppProps, State> {
 
 			setTimeout(() => {
 				window.requestAnimationFrame(async () => {
-					const outline = this.state.outline;
-					const blob = await pdf.export(outline!.data.filter(b => b.export));
+					const timeline = this.state.timeline;
+					const blob = await pdf.export(timeline!.data.filter(b => b.export));
 					this.setState({exporting: false}, () => {
-						this.setDownloadData(`${outline!.name || 'outline'}.pdf`, blob);
+						this.setDownloadData(`${timeline!.name || 'timeline'}.pdf`, blob);
 					});
 				});
 			}, 0);
@@ -360,8 +360,8 @@ class App extends React.Component<AppProps, State> {
 	public handleExportText = () => {
 		setTimeout(() => {
 			window.requestAnimationFrame(() => {
-				const outline = this.state.outline;
-				const blocks = outline!.data.filter(b => b.export);
+				const timeline = this.state.timeline;
+				const blocks = timeline!.data.filter(b => b.export);
 				const blockStrings = blocks.map(b => {
 					const parts = [];
 					if (b.showTitle) {
@@ -373,14 +373,14 @@ class App extends React.Component<AppProps, State> {
 					return parts.join('\n');
 				});
 				const str = blockStrings.join('\n\n\n');
-				this.setDownloadData(`${outline!.name || 'outline'}.txt`, str);
+				this.setDownloadData(`${timeline!.name || 'timeline'}.txt`, str);
 			});
 		}, 0);
 	}
 
-	public handleExportOutline = () => {
-		const outline = this.state.outline;
-		this.setDownloadData(`${outline!.name || 'outline'}.cbo`, JSON.stringify(outline!.data));
+	public handleExportTimeline = () => {
+		const timeline = this.state.timeline;
+		this.setDownloadData(`${timeline!.name || 'timeline'}.cbo`, JSON.stringify(timeline!.data));
 	}
 
 	public setDownloadData = (filename: string, data: string | Blob) => {
@@ -432,48 +432,48 @@ class App extends React.Component<AppProps, State> {
 	}
 
 	public handleNew = async (name: any) => {
-		const newOutline = {data: [], name: typeof name === 'string' ? name : this.state.nameStr};
-		const {data} = await this.api.post('/outlines',	newOutline);
+		const newTimeline = {data: [], name: typeof name === 'string' ? name : this.state.nameStr};
+		const {data} = await this.api.post('/timelines', newTimeline);
 
-		const outline = data.outline;
-		localStorage.setItem('outliner-data', JSON.stringify(outline));
-		this.setState({outline, showNewDialog: false}, () => {
+		const timeline = data.timeline;
+		localStorage.setItem('timeliner-data', JSON.stringify(timeline));
+		this.setState({timeline, showNewDialog: false}, () => {
 			this.handleList();
 		});
 	}
 
 	public handleOpen = async (id: string) => {
-		const {data} = await this.api.get(`/outlines/${id}`);
+		const {data} = await this.api.get(`/timelines/${id}`);
 
-		const outline = data.outline;
-		localStorage.setItem('outliner-data', JSON.stringify(outline));
-		this.setState({outline, showOpenDialog: false, loading: false});
+		const timeline = data.timeline;
+		localStorage.setItem('timeliner-data', JSON.stringify(timeline));
+		this.setState({timeline, showOpenDialog: false, loading: false});
 	}
 
 	public handleList = async (firstLoad: boolean = false) => {
-		const {data} = await this.api.get('/outlines');
-		const outlines = data.outlines as ListOutline[];
+		const {data} = await this.api.get('/timelines');
+		const timelines = data.timelines as ListTimeline[];
 
-		if (!firstLoad && outlines.length === 0) {
-			return this.setState({availableOutlines: outlines, outline: undefined});
+		if (!firstLoad && timelines.length === 0) {
+			return this.setState({availableTimelines: timelines, timeline: undefined});
 		}
 
-		this.setState({availableOutlines: outlines}, () => {
-			let outline: GetOutline | undefined;
+		this.setState({availableTimelines: timelines}, () => {
+			let timeline: GetTimeline | undefined;
 
 			if (firstLoad) {
-				const data = localStorage.getItem('outliner-data');
+				const data = localStorage.getItem('timeliner-data');
 				if (data) {
-					outline = JSON.parse(data);
+					timeline = JSON.parse(data);
 				}
 			} else {
-				outline = this.state.outline;
+				timeline = this.state.timeline;
 			}
 
-			if (outline && outlines.find(o => o.id === outline!.id)) {
-				this.handleOpen(outline.id!);
-			} else if (outlines.length > 0) {
-				this.handleOpen(outlines[0].id);
+			if (timeline && timelines.find(o => o.id === timeline!.id)) {
+				this.handleOpen(timeline.id!);
+			} else if (timelines.length > 0) {
+				this.handleOpen(timelines[0].id);
 			} else {
 				this.setState({loading: false});
 			}
@@ -481,18 +481,18 @@ class App extends React.Component<AppProps, State> {
 	}
 
 	public handleSave = debounce(async () => {
-		const outline = this.state.outline;
-		const {data} = await this.api.patch(`/outlines/${outline!.id}`, pick(outline, ['name', 'data']));
+		const timeline = this.state.timeline;
+		const {data} = await this.api.patch(`/timelines/${timeline!.id}`, pick(timeline, ['name', 'data']));
 
-		localStorage.setItem('outliner-data', JSON.stringify(data.outline));
+		localStorage.setItem('timeliner-data', JSON.stringify(data.timeline));
 
-		if (!outline!.id) {
-			this.setState({outline: data.outline});
+		if (!timeline!.id) {
+			this.setState({timeline: data.timeline});
 		}
 	}, 500);
 
 	public handleRename = async (name: string) => {
-		await this.api.patch(`/outlines/${this.state.outline!.id}`, {name});
+		await this.api.patch(`/timelines/${this.state.timeline!.id}`, {name});
 
 		this.setState({showRenameDialog: false}, () => {
 			this.handleList();
@@ -501,20 +501,20 @@ class App extends React.Component<AppProps, State> {
 
 	public handleDelete = async () => {
 		if (!this.props.auth.isAuthenticated) {
-			const outline = {data: []};
-			return this.setState({outline, showConfirmDialog: false, showDrawer: false}, () => {
-				localStorage.setItem('outliner-data', JSON.stringify(outline));
+			const timeline = {data: []};
+			return this.setState({timeline, showConfirmDialog: false, showDrawer: false}, () => {
+				localStorage.setItem('timeliner-data', JSON.stringify(timeline));
 			});
 		}
 
-		const outline = this.state.outline;
-		await this.api.delete(`/outlines/${outline!.id}`);
+		const timeline = this.state.timeline;
+		await this.api.delete(`/timelines/${timeline!.id}`);
 
 		this.setState({showConfirmDialog: false}, () => this.handleList());
 	}
 
 	public handleLogout = () => {
-		localStorage.setItem('outliner-data', JSON.stringify({data: []}));
+		localStorage.setItem('timeliner-data', JSON.stringify({data: []}));
 		this.props.auth.logout({returnTo: window.location.origin});
 	}
 
@@ -525,13 +525,13 @@ class App extends React.Component<AppProps, State> {
 	public render() {
 		const {classes, fullScreen, auth} = this.props;
 		const {
-			outline,
+			timeline,
 			showDrawer,
 			showFileTree,
 			fontsLoaded,
 			loading,
 			exporting,
-			availableOutlines,
+			availableTimelines,
 			showNewDialog,
 			nameStr,
 			downloadData,
@@ -560,8 +560,8 @@ class App extends React.Component<AppProps, State> {
 						open={showDrawer}
 						onClose={this.handleToggleDrawer(false)}
 						onNew={this.handleDelete}
-						onImport={this.handleImportOutline}
-						onExportOutline={this.handleExportOutline}
+						onImport={this.handleImportTimeline}
+						onExportTimeline={this.handleExportTimeline}
 						onExportPDF={this.handleExportPDF}
 						onExportText={this.handleExportText}
 					/>
@@ -572,12 +572,12 @@ class App extends React.Component<AppProps, State> {
 							onOpenMenu={this.handleToggleDrawer(true)}
 							onOpen={this.handleToggleFileTree(true)}
 							onClose={this.handleToggleFileTree(false)}
-							onNewOutline={this.handleNew}
-							onRenameOutline={this.handleRename}
-							onOpenOutline={this.handleOpen}
-							onDeleteOutline={this.handleDelete}
-							outlines={availableOutlines}
-							outline={outline}
+							onNewTimeline={this.handleNew}
+							onRenameTimeline={this.handleRename}
+							onOpenTimeline={this.handleOpen}
+							onDeleteTimeline={this.handleDelete}
+							timelines={availableTimelines}
+							timeline={timeline}
 						/>
 					)}
 				</div>
@@ -622,17 +622,17 @@ class App extends React.Component<AppProps, State> {
 						<IconButton
 							style={{padding: '1.2rem'}}
 							component="a"
-							href="https://github.com/olavim/outliner"
+							href="https://github.com/olavim/timeliner"
 							target="github"
 						>
 							<img src={githubIcon} style={{height: '2.4rem'}}/>
 						</IconButton>
 					</div>
 					<div className={classes.content} ref={this.listContainerRef}>
-						{outline ? (
+						{timeline ? (
 							<BlockList
 								fullScreen={fullScreen}
-								blocks={outline.data}
+								blocks={timeline.data}
 								onChange={this.handleBlocksChange}
 								onFocusBlock={this.handleFocusBlock}
 							/>

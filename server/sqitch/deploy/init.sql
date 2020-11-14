@@ -1,9 +1,9 @@
--- Deploy outliner:init to pg
+-- Deploy timeliner:init to pg
 
 BEGIN;
 
-CREATE SCHEMA outliner AUTHORIZATION outliner;
-GRANT USAGE ON SCHEMA outliner TO outliner_rw;
+CREATE SCHEMA timeliner AUTHORIZATION timeliner;
+GRANT USAGE ON SCHEMA timeliner TO timeliner_rw;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 

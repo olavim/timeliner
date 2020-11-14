@@ -309,7 +309,7 @@ class BlockList extends React.Component<Props, State> {
 						this.getBlock(block, index, block.id === this.state.focusedBlock, fullScreen)
 					)}
 					<div className={classes.listActions}>
-						<button className="outline" onClick={this.handleAddEnd}>
+						<button className="timeline" onClick={this.handleAddEnd}>
 							Add Block
 						</button>
 					</div>

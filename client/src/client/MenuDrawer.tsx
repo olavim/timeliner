@@ -175,7 +175,7 @@ interface OwnProps {
 	onClose: () => void;
 	onNew: () => void;
 	onImport: (evt: React.ChangeEvent<HTMLInputElement>) => void;
-	onExportOutline: () => void;
+	onExportTimeline: () => void;
 	onExportPDF: (width: number, height: number, margin: number) => void;
 	onExportText: () => void;
 }
@@ -306,7 +306,7 @@ class MenuDrawer extends React.Component<Props> {
 			onClose,
 			onNew,
 			onImport,
-			onExportOutline,
+			onExportTimeline,
 			onExportText
 		} = this.props;
 		const {showConfirmDialog, showPDFDialog, pageSize, pageDimensions, margin, unit} = this.state;
@@ -344,13 +344,13 @@ class MenuDrawer extends React.Component<Props> {
 							onChange={onImport}
 							accept=".otl,.cbo"
 						/>
-						<label className={classes.uploadLabel} htmlFor="file">Import Outline</label>
+						<label className={classes.uploadLabel} htmlFor="file">Import Timeline</label>
 					</ListItem>
 				</List>
 				<Divider />
 				<List>
-					<ListItem button className={classes.drawerItem} onClick={onExportOutline}>
-						<ListItemText primary="Export Outline" disableTypography />
+					<ListItem button className={classes.drawerItem} onClick={onExportTimeline}>
+						<ListItemText primary="Export Timeline" disableTypography />
 					</ListItem>
 					<ListItem button className={classes.drawerItem} onClick={this.handleOpenPDFDialog}>
 						<ListItemText primary="Export PDF" disableTypography />
