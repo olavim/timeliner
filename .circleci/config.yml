@@ -1,0 +1,72 @@
+build_defaults: &build_defaults
+  steps:
+    - checkout
+    - setup_remote_docker
+    - run:
+        name: Build Docker image
+        command: docker build -t olavim/outliner-$SERVICE:$CIRCLE_SHA1 --build-arg service=$SERVICE .
+    - run:
+        name: Publish Docker image to Docker Hub
+        command: |
+          echo "$DOCKER_PASS" | docker login -u $DOCKER_USER --password-stdin
+          docker push olavim/outliner-$SERVICE:$CIRCLE_SHA1
+deploy_defaults: &deploy_defaults
+  steps:
+    - setup_remote_docker
+    - attach_workspace:
+        at: /tmp/workspace
+    - add_ssh_keys:
+        fingerprints:
+          - 81:1a:d9:8f:04:58:7f:f4:67:09:60:f4:4c:3b:b4:9e
+    - run:
+        name: Deploy service
+        command: |
+          ssh-keyscan $SSH_HOST >> ~/.ssh/known_hosts
+          ssh $SSH_USER@$SSH_HOST docker service update --image olavim/outliner-$SERVICE:$CIRCLE_SHA1 outliner_$SERVICE
+
+version: 2.1
+executors:
+  client-docker-publisher:
+    environment:
+      SERVICE: client
+    docker:
+      - image: circleci/buildpack-deps:stretch
+  server-docker-publisher:
+    environment:
+      SERVICE: server
+    docker:
+      - image: circleci/buildpack-deps:stretch
+
+jobs:
+  build-client:
+    executor: client-docker-publisher
+    <<: *build_defaults
+  build-server:
+    executor: server-docker-publisher
+    <<: *build_defaults
+  deploy-client:
+    executor: client-docker-publisher
+    <<: *deploy_defaults
+  deploy-server:
+    executor: server-docker-publisher
+    <<: *deploy_defaults
+
+workflows:
+  version: 2
+  build-n-deploy:
+    jobs:
+      - build-client:
+          filters:
+            branches:
+              only: master
+      - build-server:
+          filters:
+            branches:
+              only: master
+      - deploy-client:
+          requires:
+            - build-client
+      - deploy-server:
+          requires:
+            - build-server
+

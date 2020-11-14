@@ -1,0 +1,26 @@
+{
+	"name": "outliner",
+	"version": "0.1.0",
+	"repository": "git@github.com:olavim/outliner",
+	"author": "Olavi Mustanoja <tilastokeskus@gmail.com>",
+	"private": true,
+	"license": "See LICENSE",
+	"sideEffects": false,
+	"scripts": {
+		"build": "lerna exec --parallel yarn build",
+		"build:docker:client": "docker build -t olavim/outliner-client --build-arg service=client .",
+		"build:docker:server": "docker build -t olavim/outliner-server --build-arg service=server .",
+		"build:docker": "yarn build:docker:client && yarn build:docker:server",
+		"publish:docker:client": "docker push olavim/outliner-client",
+		"publish:docker:server": "docker push olavim/outliner-server",
+		"publish:docker": "yarn publish:docker:client && yarn publish:docker:server"
+	},
+	"dependencies": {},
+	"devDependencies": {
+		"lerna": "^2.2.0"
+	},
+	"workspaces": [
+		"client",
+		"server"
+	]
+}
