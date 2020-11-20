@@ -3,7 +3,6 @@ import {createStyles, WithStyles, withStyles} from '@material-ui/core';
 import cls from 'classnames';
 import * as _memoize from 'memoizee';
 import Block from './Block';
-import Checkbox from '@/Checkbox';
 import {ColorState, SketchPicker as _SketchPicker} from 'react-color';
 
 const SketchPicker = _SketchPicker as any;
@@ -13,7 +12,7 @@ const styles = createStyles({
 	focus: {},
 	wrapper: {
 		minHeight: 'calc(100% - 4rem)',
-		maxWidth: '60rem',
+		maxWidth: '50rem',
 		width: 'calc(100% - 6rem)',
 		display: 'flex',
 		flexDirection: 'column',
@@ -21,7 +20,8 @@ const styles = createStyles({
 		'@media (min-width: 960px)': {
 			borderLeft: '1px dotted rgba(0,0,0,0.1)',
 			borderRight: '1px dotted rgba(0,0,0,0.1)',
-			width: 'calc(100% - 8rem)'
+			width: '50rem',
+			minWidth: '50rem'
 		},
 		'&$focus': {
 			'@media (max-width: 960px)': {
@@ -44,19 +44,6 @@ const styles = createStyles({
 	listActions: {
 		marginTop: '0.6rem',
 		textAlign: 'right'
-	},
-	checkboxContainer: {
-		position: 'relative',
-		height: '3.2rem',
-		display: 'flex',
-		marginTop: '1rem',
-		padding: '0 1rem',
-		justifyContent: 'flex-end',
-		alignItems: 'center',
-		'& > span': {
-			marginRight: '0.6rem',
-			color: 'rgba(0,0,0,0.87)'
-		}
 	},
 	checkboxRoot: {
 		margin: '0.5rem',
@@ -292,18 +279,9 @@ class BlockList extends React.Component<Props, State> {
 	public render() {
 		const {classes, blocks, fullScreen} = this.props;
 		const focusedBlock = blocks.find(b => b.id === this.state.focusedBlock);
-		const exportAllChecked = blocks.every(b => b.export);
 
 		return (
 			<div className={cls(classes.wrapper, {[classes.focus]: this.state.focusedBlock !== -1})}>
-				<div className={classes.checkboxContainer}>
-					<span>Export All</span>
-					<Checkbox
-						classNames={{root: classes.checkboxRoot, checkbox: classes.checkbox}}
-						checked={exportAllChecked}
-						onClick={this.handleClickExportAll}
-					/>
-				</div>
 				<div className={classes.root}>
 					{blocks.map((block, index) =>
 						this.getBlock(block, index, block.id === this.state.focusedBlock, fullScreen)

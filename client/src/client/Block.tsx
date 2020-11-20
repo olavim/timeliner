@@ -21,7 +21,6 @@ import {
 import {XYCoord} from 'dnd-core';
 import hex2rgba from 'hex-to-rgba';
 import {BlockData} from './BlockList';
-import Checkbox from './Checkbox';
 import isMobile from '@/lib/is-mobile';
 
 const theme = {
@@ -265,12 +264,6 @@ const styles = createStyles({
 		[`@media (max-width: ${theme.actionsBreakpoint}px)`]: {
 			padding: '0 1rem'
 		}
-	},
-	checkbox: {
-		position: 'absolute',
-		top: 0,
-		right: 0,
-		margin: '0.6rem'
 	},
 	dialogTitle: {
 		fontSize: '1.6rem',
@@ -554,11 +547,6 @@ class Block extends React.PureComponent<Props, State> {
 
 		let contentElem = (
 			<div className={classes.content}>
-				<Checkbox
-					checked={block.export}
-					onClick={this.handleClickExportCheckbox}
-					classNames={{root: classes.checkbox}}
-				/>
 				{block.showTitle && (
 					<div
 						className={classes.title}

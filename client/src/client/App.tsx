@@ -26,7 +26,6 @@ import FileTreeIcon from '@material-ui/icons/FolderOpen';
 import DownloadIcon from '@material-ui/icons/GetApp';
 import githubIcon from './github-32px.png';
 import BlockList, {BlockData} from './BlockList';
-import PDF from '@/lib/create-pdf';
 import withAuth, {WithAuthProps} from '@/hocs/with-auth';
 import isMobile from '@/lib/is-mobile';
 import MenuDrawer from '@/MenuDrawer';
@@ -43,7 +42,14 @@ const styles = createStyles({
 		display: 'flex',
 		flexDirection: 'column',
 		textAlign: 'center',
-		flex: '1 1 auto'
+		flex: '1 1 auto',
+		overflow: 'hidden'
+	},
+	newColumnBtn: {
+		margin: '1rem',
+		padding: '1rem',
+		minWidth: 0,
+		minHeight: 0
 	},
 	appBar: {
 		display: 'flex',
@@ -76,11 +82,18 @@ const styles = createStyles({
 	},
 	content: {
 		display: 'flex',
-		justifyContent: 'center',
+		flexDirection: 'column',
+		justifyContent: 'flex-start',
 		flex: '1 1 auto',
 		overflowY: 'scroll',
-		overflowX: 'hidden',
-		alignItems: 'baseline'
+		overflowX: 'scroll'
+	},
+	contentRow: {
+		display: 'flex',
+		flexDirection: 'row',
+		justifyContent: 'flex-start',
+		flex: '1 1 auto',
+		alignItems: 'flex-start'
 	},
 	progressOverlay: {
 		width: '100%',
@@ -97,6 +110,7 @@ const styles = createStyles({
 	drawerContainer: {
 		zIndex: 1000,
 		'@media (min-width: 960px)': {
+			flex: '0 0 22%',
 			width: '22%',
 			maxWidth: '24rem',
 			minWidth: '15rem',
@@ -174,6 +188,11 @@ const styles = createStyles({
 	}
 });
 
+export type Timeline = Array<{
+	title: string;
+	columns: BlockData[][];
+}>;
+
 export interface ListTimeline {
 	id: string;
 	name: string;
@@ -182,7 +201,7 @@ export interface ListTimeline {
 }
 
 export interface GetTimeline {
-	data: BlockData[];
+	data: Timeline;
 	id?: string;
 	name?: string;
 	createdAt?: string;
@@ -204,10 +223,6 @@ interface State {
 	showConfirmDialog: boolean;
 	downloadData: {blob: Blob; filename: string} | null;
 	appBarActions: any[];
-}
-
-const trimNewLines = (str: string) => {
-	return str.replace(/(\n|\r)+$/, '').replace(/^(\n|\r)+/, '');
 }
 
 type AppProps = WithMobileDialog & WithStyles<typeof styles> & WithAuthProps;
@@ -268,7 +283,10 @@ class App extends React.Component<AppProps, State> {
 			this.handleList(true);
 		} else {
 			const data = localStorage.getItem('timeliner-data');
-			this.setState({timeline: data ? JSON.parse(data) : {data: []}, loading: false});
+			this.setState({
+				timeline: data ? JSON.parse(data) : {data: [{title: '', columns: [[]]}]},
+				loading: false
+			});
 		}
 	}
 
@@ -285,9 +303,9 @@ class App extends React.Component<AppProps, State> {
 		}
 	}
 
-	public handleBlocksChange = (data: BlockData[]) => {
+	public getBlockChangeHandler = (row: number, col: number) => (data: BlockData[]) => {
 		const timeline = cloneDeep(this.state.timeline);
-		timeline!.data = data;
+		timeline!.data[row].columns[col] = data;
 
 		if (this.props.auth.isAuthenticated) {
 			this.handleSave();
@@ -331,51 +349,12 @@ class App extends React.Component<AppProps, State> {
 		}
 	}
 
-	public handleExportPDF = (width: number, height: number, margin: number) => {
-		this.setState({exporting: true}, () => {
-			const ppi = 72;
-			const pdf = new PDF({
-				pageWidth: width * ppi,
-				pageHeight: height * ppi,
-				indentWidth: 40,
-				margin: margin * ppi,
-				blockMargin: 0.04 * ppi,
-				blockPadding: 0.07 * ppi,
-				borderRadius: 4,
-				fontSize: 9
-			});
-
-			setTimeout(() => {
-				window.requestAnimationFrame(async () => {
-					const timeline = this.state.timeline;
-					const blob = await pdf.export(timeline!.data.filter(b => b.export));
-					this.setState({exporting: false}, () => {
-						this.setDownloadData(`${timeline!.name || 'timeline'}.pdf`, blob);
-					});
-				});
-			}, 0);
-		})
+	public handleExportPDF = (_width: number, _height: number, _margin: number) => {
+		// Not implemented
 	}
 
 	public handleExportText = () => {
-		setTimeout(() => {
-			window.requestAnimationFrame(() => {
-				const timeline = this.state.timeline;
-				const blocks = timeline!.data.filter(b => b.export);
-				const blockStrings = blocks.map(b => {
-					const parts = [];
-					if (b.showTitle) {
-						parts.push(trimNewLines(b.title));
-					}
-					if (b.showBody) {
-						parts.push(trimNewLines(b.body));
-					}
-					return parts.join('\n');
-				});
-				const str = blockStrings.join('\n\n\n');
-				this.setDownloadData(`${timeline!.name || 'timeline'}.txt`, str);
-			});
-		}, 0);
+		// Not implemented
 	}
 
 	public handleExportTimeline = () => {
@@ -522,6 +501,18 @@ class App extends React.Component<AppProps, State> {
 		this.setState({appBarActions: ref.current ? ref.current.getActions() : []});
 	}
 
+	public getNewColumnHandler = (index: number) => () => {
+		this.setState(state => {
+			const newData = state.timeline!.data.map(row => {
+				const newRow = cloneDeep(row);
+				newRow.columns.splice(index, 0, []);
+				return newRow;
+			});
+
+			return {timeline: {...state.timeline, data: newData}};
+		});
+	}
+
 	public render() {
 		const {classes, fullScreen, auth} = this.props;
 		const {
@@ -630,12 +621,26 @@ class App extends React.Component<AppProps, State> {
 					</div>
 					<div className={classes.content} ref={this.listContainerRef}>
 						{timeline ? (
-							<BlockList
-								fullScreen={fullScreen}
-								blocks={timeline.data}
-								onChange={this.handleBlocksChange}
-								onFocusBlock={this.handleFocusBlock}
-							/>
+							timeline.data.map((blockLists, row) => (
+								<div className={classes.contentRow} key={row}>
+									<Button onClick={this.getNewColumnHandler(0)} className={classes.newColumnBtn}>
+										+
+									</Button>
+									{blockLists.columns.map((list, col) => (
+										<React.Fragment key={`${row}:${col}`}>
+											<BlockList
+												fullScreen={fullScreen}
+												blocks={list}
+												onChange={this.getBlockChangeHandler(row, col)}
+												onFocusBlock={this.handleFocusBlock}
+											/>
+											<Button onClick={this.getNewColumnHandler(col + 1)} className={classes.newColumnBtn}>
+												+
+											</Button>
+										</React.Fragment>
+									))}
+								</div>
+							))
 						) : (
 							<div className={classes.noDocumentContainer}>
 								<Fab variant="extended" onClick={this.handleOpenNewDialog}>
