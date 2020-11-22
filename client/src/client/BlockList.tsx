@@ -11,7 +11,7 @@ const memoize = (_memoize as any).default;
 const styles = createStyles({
 	focus: {},
 	wrapper: {
-		minHeight: 'calc(100% - 4rem)',
+		minHeight: '100%',
 		maxWidth: '50rem',
 		width: 'calc(100% - 6rem)',
 		display: 'flex',

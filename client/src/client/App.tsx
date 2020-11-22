@@ -30,6 +30,28 @@ import withAuth, {WithAuthProps} from '@/hocs/with-auth';
 import isMobile from '@/lib/is-mobile';
 import MenuDrawer from '@/MenuDrawer';
 import FileTreeDrawer from '@/FileTreeDrawer';
+import MoveBlockUpIcon from './images/move-block-up.svg';
+import MoveBlockDownIcon from './images/move-block-down.svg';
+import AddBlockAboveIcon from './images/add-block-above.svg';
+import AddBlockBelowIcon from './images/add-block-below.svg';
+import IndentIcon from './images/indent-block.svg';
+import OutdentIcon from './images/outdent-block.svg';
+import AddTitleIcon from './images/add-title.svg';
+import AddBodyIcon from './images/add-body.svg';
+import RemoveTitleIcon from './images/remove-title.svg';
+import RemoveBodyIcon from './images/remove-body.svg';
+import ColorChooserIcon from './images/color-chooser.svg';
+import RemoveBlockIcon from './images/remove-block.svg';
+import MoveColumnRightIcon from './images/move-column-right.svg';
+import MoveColumnLeftIcon from './images/move-column-left.svg';
+import MoveRowUpIcon from './images/move-row-up.svg';
+import MoveRowDownIcon from './images/move-row-down.svg';
+import AddColumnLeftIcon from './images/add-column-left.svg';
+import AddColumnRightIcon from './images/add-column-right.svg';
+import AddRowAboveIcon from './images/add-row-above.svg';
+import AddRowBelowIcon from './images/add-row-below.svg';
+import RemoveColumnIcon from './images/remove-column.svg';
+import RemoveRowIcon from './images/remove-row.svg';
 
 const styles = createStyles({
 	root: {
@@ -67,6 +89,15 @@ const styles = createStyles({
 		[`@media (max-height: 500px) and (orientation:landscape)`]: {
 			padding: '0 1rem'
 		}
+	},
+	controlBar: {
+		display: 'flex',
+		backgroundColor: '#ffffff',
+		flex: '0 0 5rem',
+		padding: '0 2rem',
+		justifyContent: 'flex-start',
+		alignItems: 'center',
+		boxShadow: '0 0 0.6rem 0 rgba(0,0,0,0.4)'
 	},
 	menuButton: {
 		padding: '0.6rem',
@@ -411,7 +442,10 @@ class App extends React.Component<AppProps, State> {
 	}
 
 	public handleNew = async (name: any) => {
-		const newTimeline = {data: [], name: typeof name === 'string' ? name : this.state.nameStr};
+		const newTimeline = {
+			data: [{title: '', columns: [[]]}],
+			name: typeof name === 'string' ? name : this.state.nameStr
+		};
 		const {data} = await this.api.post('/timelines', newTimeline);
 
 		const timeline = data.timeline;
@@ -617,6 +651,74 @@ class App extends React.Component<AppProps, State> {
 							target="github"
 						>
 							<img src={githubIcon} style={{height: '2.4rem'}}/>
+						</IconButton>
+					</div>
+					<div className={classes.controlBar}>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={MoveBlockUpIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={MoveBlockDownIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={AddBlockAboveIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={AddBlockBelowIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={IndentIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={OutdentIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={AddTitleIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={RemoveTitleIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={AddBodyIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={RemoveBodyIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={ColorChooserIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={RemoveBlockIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={MoveColumnRightIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={MoveColumnLeftIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={MoveRowUpIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={MoveRowDownIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={AddColumnLeftIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={AddColumnRightIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={AddRowAboveIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={AddRowBelowIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={RemoveColumnIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
+							<img src={RemoveRowIcon} style={{width: '24px'}}/>
 						</IconButton>
 					</div>
 					<div className={classes.content} ref={this.listContainerRef}>
