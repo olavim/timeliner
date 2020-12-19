@@ -97,7 +97,10 @@ const styles = createStyles({
 		padding: '0 2rem',
 		justifyContent: 'flex-start',
 		alignItems: 'center',
-		boxShadow: '0 0 0.6rem 0 rgba(0,0,0,0.4)'
+		boxShadow: '0 0 0.6rem 0 rgba(0,0,0,0.4)',
+		'& button:disabled': {
+			opacity: 0.4
+		}
 	},
 	menuButton: {
 		padding: '0.6rem',
@@ -319,12 +322,6 @@ class App extends React.Component<AppProps, State> {
 				loading: false
 			});
 		}
-
-		window.addEventListener('click', this.handleDocumentClick);
-	}
-
-	public componentWillUnmount() {
-		window.removeEventListener('click', this.handleDocumentClick);
 	}
 
 	public handleDocumentClick = (_evt: any) => {
@@ -342,44 +339,6 @@ class App extends React.Component<AppProps, State> {
 				});
 			}, 0);
 		}
-	}
-
-	public getBlockChangeHandler = (row: number, col: number) => (data: BlockData[]) => {
-		const timeline = cloneDeep(this.state.timeline);
-		timeline!.data[row].columns[col] = data;
-
-		if (this.props.auth.isAuthenticated) {
-			this.handleSave();
-		} else {
-			localStorage.setItem('timeliner-data', JSON.stringify(timeline));
-		}
-
-		this.setState({timeline});
-	}
-
-	public getBlockClickHandler = (row: number, col: number) => (idx: number) => {
-		this.unfocusBlocks();
-
-		const timeline = cloneDeep(this.state.timeline);
-		if (timeline!.data[row].columns[col][idx]) {
-			timeline!.data[row].columns[col][idx].focused = true;
-		}
-
-		this.setState({timeline});
-	}
-
-	public unfocusBlocks = () => {
-		const timeline = cloneDeep(this.state.timeline);
-
-		for (let r = 0; r < timeline!.data.length; r++) {
-			for (let c = 0; c < timeline!.data[r].columns.length; c++) {
-				for (let i = 0; i < timeline!.data[r].columns[c].length; i++) {
-					timeline!.data[r].columns[c][i].focused = false;
-				}
-			}
-		}
-
-		this.setState({timeline});
 	}
 
 	public handleImportTimeline = (evt: React.ChangeEvent<HTMLInputElement>) => {
@@ -578,6 +537,130 @@ class App extends React.Component<AppProps, State> {
 		});
 	}
 
+	public getFocusedBlock = () => {
+		const rows = this.state.timeline?.data ?? [];
+
+		for (let r = 0; r < rows.length; r++) {
+			for (let c = 0; c < rows[r].columns.length; c++) {
+				for (let i = 0; i < rows[r].columns[c].length; i++) {
+					if (rows[r].columns[c][i].focused) {
+						return {row: r, column: c, index: i};
+					}
+				}
+			}
+		}
+
+		return null;
+	};
+
+	public getBlockChangeHandler = (row: number, col: number) => (data: BlockData[]) => {
+		const timeline = cloneDeep(this.state.timeline);
+		timeline!.data[row].columns[col] = data;
+
+		if (this.props.auth.isAuthenticated) {
+			this.handleSave();
+		} else {
+			localStorage.setItem('timeliner-data', JSON.stringify(timeline));
+		}
+
+		this.setState({timeline});
+	}
+
+	public getBlockClickHandler = (row: number, col: number) => (idx: number) => {
+		this.unfocusBlocks();
+
+		this.setState(state => {
+			const timeline = state.timeline;
+			if (timeline!.data[row].columns[col][idx]) {
+				timeline!.data[row].columns[col][idx].focused = true;
+			}
+
+			return {timeline};
+		});
+	}
+
+	public unfocusBlocks = () => {
+		const timeline = cloneDeep(this.state.timeline);
+
+		for (let r = 0; r < timeline!.data.length; r++) {
+			for (let c = 0; c < timeline!.data[r].columns.length; c++) {
+				for (let i = 0; i < timeline!.data[r].columns[c].length; i++) {
+					timeline!.data[r].columns[c][i].focused = false;
+				}
+			}
+		}
+
+		this.setState({timeline});
+	}
+
+	public handleAddBlockAbove = () => {
+		const pos = this.getFocusedBlock()!;
+		const timeline = cloneDeep(this.state.timeline)!;
+
+		timeline.data[pos.row].columns[pos.column][pos.index].focused = false;
+		timeline.data[pos.row].columns[pos.column].splice(pos.index, 0, {
+			...timeline.data[pos.row].columns[pos.column][pos.index],
+			id: new Date().getTime(),
+			focused: true,
+			body: '',
+			title: ''
+		});
+
+		this.setState({timeline});
+	};
+
+	public handleAddBlockBelow = () => {
+		const pos = this.getFocusedBlock()!;
+		const timeline = cloneDeep(this.state.timeline)!;
+
+		timeline.data[pos.row].columns[pos.column][pos.index].focused = false;
+		timeline.data[pos.row].columns[pos.column].splice(pos.index + 1, 0, {
+			...timeline.data[pos.row].columns[pos.column][pos.index],
+			id: new Date().getTime(),
+			focused: true,
+			body: '',
+			title: ''
+		});
+
+		this.setState({timeline});
+	};
+
+	public handleMoveBlockUp = () => {
+		const pos = this.getFocusedBlock()!;
+
+		if (pos.index === 0) {
+			return;
+		}
+
+		this.setState(state => {
+			const timeline = state.timeline!;
+			const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
+			const prevBlock = timeline.data[pos.row].columns[pos.column][pos.index - 1];
+			timeline.data[pos.row].columns[pos.column][pos.index] = prevBlock;
+			timeline.data[pos.row].columns[pos.column][pos.index - 1] = focusedBlock;
+
+			return {timeline};
+		});
+	};
+
+	public handleMoveBlockDown = () => {
+		const pos = this.getFocusedBlock()!;
+
+		if (pos.index === this.state.timeline!.data[pos.row].columns[pos.column].length - 1) {
+			return;
+		}
+
+		this.setState(state => {
+			const timeline = state.timeline!;
+			const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
+			const nextBlock = timeline.data[pos.row].columns[pos.column][pos.index + 1];
+			timeline.data[pos.row].columns[pos.column][pos.index] = nextBlock;
+			timeline.data[pos.row].columns[pos.column][pos.index + 1] = focusedBlock;
+
+			return {timeline};
+		});
+	};
+
 	public render() {
 		const {classes, fullScreen, auth} = this.props;
 		const {
@@ -594,6 +677,8 @@ class App extends React.Component<AppProps, State> {
 			appBarActions
 		} = this.state;
 
+		const focusedBlockPos = this.getFocusedBlock();
+
 		if (!fontsLoaded || loading || auth.loading) {
 			return (
 				<div className={classes.progressOverlay}>
@@ -601,6 +686,31 @@ class App extends React.Component<AppProps, State> {
 				</div>
 			);
 		}
+
+		const actions = [
+			{icon: MoveBlockUpIcon, onClick: this.handleMoveBlockUp},
+			{icon: MoveBlockDownIcon, onClick: this.handleMoveBlockDown},
+			{icon: AddBlockAboveIcon, onClick: this.handleAddBlockAbove},
+			{icon: AddBlockBelowIcon, onClick: this.handleAddBlockBelow},
+			{icon: RemoveBlockIcon},
+			{icon: IndentIcon},
+			{icon: OutdentIcon},
+			{icon: AddTitleIcon},
+			{icon: RemoveTitleIcon},
+			{icon: AddBodyIcon},
+			{icon: RemoveBodyIcon},
+			{icon: ColorChooserIcon},
+			{icon: MoveColumnRightIcon},
+			{icon: MoveColumnLeftIcon},
+			{icon: MoveRowUpIcon},
+			{icon: MoveRowDownIcon},
+			{icon: AddColumnLeftIcon},
+			{icon: AddColumnRightIcon},
+			{icon: AddRowAboveIcon},
+			{icon: AddRowBelowIcon},
+			{icon: RemoveColumnIcon},
+			{icon: RemoveRowIcon},
+		];
 
 		return (
 			<div className={classes.root}>
@@ -685,74 +795,18 @@ class App extends React.Component<AppProps, State> {
 						</IconButton>
 					</div>
 					<div className={classes.controlBar}>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={MoveBlockUpIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={MoveBlockDownIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={AddBlockAboveIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={AddBlockBelowIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={RemoveBlockIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={IndentIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={OutdentIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={AddTitleIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={RemoveTitleIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={AddBodyIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={RemoveBodyIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={ColorChooserIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={MoveColumnRightIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={MoveColumnLeftIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={MoveRowUpIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={MoveRowDownIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={AddColumnLeftIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={AddColumnRightIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={AddRowAboveIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={AddRowBelowIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={RemoveColumnIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={RemoveRowIcon} style={{width: '24px'}}/>
-						</IconButton>
+						{actions.map((obj, idx) => (
+							<IconButton
+								key={idx}
+								style={{padding: '0.75rem'}}
+								disabled={!focusedBlockPos}
+								onClick={obj.onClick}
+							>
+								<img src={obj.icon} style={{width: '24px'}}/>
+							</IconButton>
+						))}
 					</div>
-					<div className={classes.content} ref={this.listContainerRef}>
+					<div className={classes.content} ref={this.listContainerRef} onClick={this.handleDocumentClick}>
 						{timeline ? (
 							timeline.data.map((blockLists, row) => (
 								<div className={classes.contentRow} key={row}>
