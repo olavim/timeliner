@@ -319,6 +319,16 @@ class App extends React.Component<AppProps, State> {
 				loading: false
 			});
 		}
+
+		window.addEventListener('click', this.handleDocumentClick);
+	}
+
+	public componentWillUnmount() {
+		window.removeEventListener('click', this.handleDocumentClick);
+	}
+
+	public handleDocumentClick = (_evt: any) => {
+		this.unfocusBlocks();
 	}
 
 	public componentDidUpdate(_prevProps: any, prevState: State) {
@@ -342,6 +352,31 @@ class App extends React.Component<AppProps, State> {
 			this.handleSave();
 		} else {
 			localStorage.setItem('timeliner-data', JSON.stringify(timeline));
+		}
+
+		this.setState({timeline});
+	}
+
+	public getBlockClickHandler = (row: number, col: number) => (idx: number) => {
+		this.unfocusBlocks();
+
+		const timeline = cloneDeep(this.state.timeline);
+		if (timeline!.data[row].columns[col][idx]) {
+			timeline!.data[row].columns[col][idx].focused = true;
+		}
+
+		this.setState({timeline});
+	}
+
+	public unfocusBlocks = () => {
+		const timeline = cloneDeep(this.state.timeline);
+
+		for (let r = 0; r < timeline!.data.length; r++) {
+			for (let c = 0; c < timeline!.data[r].columns.length; c++) {
+				for (let i = 0; i < timeline!.data[r].columns[c].length; i++) {
+					timeline!.data[r].columns[c][i].focused = false;
+				}
+			}
 		}
 
 		this.setState({timeline});
@@ -531,10 +566,6 @@ class App extends React.Component<AppProps, State> {
 		this.props.auth.logout({returnTo: window.location.origin});
 	}
 
-	public handleFocusBlock = (ref: React.RefObject<any>) => {
-		this.setState({appBarActions: ref.current ? ref.current.getActions() : []});
-	}
-
 	public getNewColumnHandler = (index: number) => () => {
 		this.setState(state => {
 			const newData = state.timeline!.data.map(row => {
@@ -667,6 +698,9 @@ class App extends React.Component<AppProps, State> {
 							<img src={AddBlockBelowIcon} style={{width: '24px'}}/>
 						</IconButton>
 						<IconButton style={{padding: '0.75rem'}}>
+							<img src={RemoveBlockIcon} style={{width: '24px'}}/>
+						</IconButton>
+						<IconButton style={{padding: '0.75rem'}}>
 							<img src={IndentIcon} style={{width: '24px'}}/>
 						</IconButton>
 						<IconButton style={{padding: '0.75rem'}}>
@@ -686,9 +720,6 @@ class App extends React.Component<AppProps, State> {
 						</IconButton>
 						<IconButton style={{padding: '0.75rem'}}>
 							<img src={ColorChooserIcon} style={{width: '24px'}}/>
-						</IconButton>
-						<IconButton style={{padding: '0.75rem'}}>
-							<img src={RemoveBlockIcon} style={{width: '24px'}}/>
 						</IconButton>
 						<IconButton style={{padding: '0.75rem'}}>
 							<img src={MoveColumnRightIcon} style={{width: '24px'}}/>
@@ -725,21 +756,14 @@ class App extends React.Component<AppProps, State> {
 						{timeline ? (
 							timeline.data.map((blockLists, row) => (
 								<div className={classes.contentRow} key={row}>
-									<Button onClick={this.getNewColumnHandler(0)} className={classes.newColumnBtn}>
-										+
-									</Button>
 									{blockLists.columns.map((list, col) => (
-										<React.Fragment key={`${row}:${col}`}>
-											<BlockList
-												fullScreen={fullScreen}
-												blocks={list}
-												onChange={this.getBlockChangeHandler(row, col)}
-												onFocusBlock={this.handleFocusBlock}
-											/>
-											<Button onClick={this.getNewColumnHandler(col + 1)} className={classes.newColumnBtn}>
-												+
-											</Button>
-										</React.Fragment>
+										<BlockList
+											key={`${row}:${col}`}
+											fullScreen={fullScreen}
+											blocks={list}
+											onChange={this.getBlockChangeHandler(row, col)}
+											onClickBlock={this.getBlockClickHandler(row, col)}
+										/>
 									))}
 								</div>
 							))

@@ -1,11 +1,9 @@
 import * as React from 'react';
 import {createStyles, WithStyles, withStyles} from '@material-ui/core';
-import cls from 'classnames';
 import * as _memoize from 'memoizee';
 import Block from './Block';
-import {ColorState, SketchPicker as _SketchPicker} from 'react-color';
+import {SketchPicker as _SketchPicker} from 'react-color';
 
-const SketchPicker = _SketchPicker as any;
 const memoize = (_memoize as any).default;
 
 const styles = createStyles({
@@ -109,113 +107,31 @@ export interface BlockData {
 	showBody: boolean;
 	color: string;
 	indent: number;
-	export: boolean;
+	focused: boolean;
 }
 
 interface Props extends WithStyles<typeof styles> {
 	fullScreen?: boolean;
 	blocks: BlockData[];
 	onChange: (blocks: BlockData[]) => any;
-	onFocusBlock: (ref: React.RefObject<any>) => void;
+	onClickBlock: (idx: number) => any;
 }
 
-interface State {
-	focusedBlock: any;
-	showColorPicker: any;
-}
-
-class BlockList extends React.Component<Props, State> {
-	public state: State = {
-		focusedBlock: -1,
-		showColorPicker: null
-	};
-
-	public focusedBlockRef = React.createRef<any>();
-
+class BlockList extends React.Component<Props> {
 	public getBlock = memoize(
-		(block: BlockData, index: number, focused: boolean, fullScreen?: boolean) => (
+		(block: BlockData, index: number, fullScreen?: boolean) => (
 			<Block
 				key={block.id}
 				index={index}
 				fullScreen={fullScreen}
 				onChange={this.handleChangeBlock}
+				onClick={this.props.onClickBlock}
 				block={block}
-				onAddBefore={this.handleAddBefore}
-				onAddAfter={this.handleAddAfter}
-				onDelete={this.handleDelete}
-				focus={focused}
-				onClick={this.handleFocusBlock(block.id)}
-				onChangeColor={this.handleOpenColorPicker}
 				moveBlock={this.handleMoveBlock}
-				innerRef={focused ? this.focusedBlockRef : null}
 			/>
 		),
 		{normalizer: (args: any) => args[2] ? Date.now() : JSON.stringify(args)}
 	);
-
-	public componentDidMount() {
-		window.addEventListener('click', this.handleDocumentClick);
-	}
-
-	public componentWillUnmount() {
-		window.removeEventListener('click', this.handleDocumentClick);
-	}
-
-	public handleDocumentClick = (evt: any) => {
-		this.handleFocusBlock(-1)(evt);
-	}
-
-	public handleAddAt = (index: number, parentBlock: BlockData | null = null) => {
-		const blocks = this.props.blocks.slice();
-		if (index !== -1) {
-			const id = new Date().getTime();
-
-			blocks.splice(index, 0, {
-				id,
-				title: '',
-				body: '',
-				showTitle: parentBlock ? parentBlock.showTitle : true,
-				showBody: parentBlock ? parentBlock.showBody : false,
-				color: parentBlock ? parentBlock.color : '#ffcc88',
-				indent: parentBlock ? parentBlock.indent : 0,
-				export: parentBlock ? parentBlock.export : true
-			});
-			setTimeout(() => {
-				this.setState({focusedBlock: id});
-			}, 50);
-			this.props.onChange(blocks);
-		}
-	}
-
-	public handleAddBefore = (id: any) => {
-		const index = this.props.blocks.findIndex(b => b.id === id);
-		this.handleAddAt(index, this.props.blocks[index]);
-	};
-
-	public handleAddAfter = (id: any) => {
-		const index = this.props.blocks.findIndex(b => b.id === id);
-		this.handleAddAt(index + 1, this.props.blocks[index]);
-	};
-
-	public handleAddEnd = (evt: React.MouseEvent) => {
-		evt.stopPropagation();
-		this.handleAddAt(this.props.blocks.length);
-	};
-
-	public handleDelete = (id: any) => {
-		const blocks = this.props.blocks.slice();
-		const index = blocks.findIndex(b => b.id === id);
-		if (index !== -1) {
-			blocks.splice(index, 1);
-			setTimeout(() => {
-				if (blocks.length > 0) {
-					const newIndex = index <= blocks.length - 1 ? index : blocks.length - 1;
-					this.setState({focusedBlock: blocks[newIndex].id});
-				}
-			}, 10);
-			this.props.onChange(blocks);
-		}
-	};
 
 	public handleChangeBlock = (id: any, prop: keyof BlockData, value: any) => {
 		const blocks = this.props.blocks.slice();
@@ -232,13 +148,6 @@ class BlockList extends React.Component<Props, State> {
 		return Array.from(set);
 	}
 
-	public handleFocusBlock = (id: any) => (evt: React.MouseEvent) => {
-		evt.stopPropagation();
-		this.setState({focusedBlock: id}, () => {
-			this.props.onFocusBlock(this.focusedBlockRef);
-		});
-	}
-
 	public handleOpenColorPicker = (evt: React.MouseEvent) => {
 		evt.stopPropagation();
 		this.setState({showColorPicker: true});
@@ -247,13 +156,6 @@ class BlockList extends React.Component<Props, State> {
 	public handleCloseColorPicker = (evt: React.MouseEvent) => {
 		evt.stopPropagation();
 		this.setState({showColorPicker: false});
-	}
-
-	public handleChangeBlockColor = (color: ColorState) => {
-		const focusedBlock = this.props.blocks.find(b => b.id === this.state.focusedBlock);
-		if (focusedBlock) {
-			this.handleChangeBlock(focusedBlock.id, 'color', color.hex);
-		}
 	}
 
 	public handleMoveBlock = (dragIndex: any, hoverIndex: any) => {
@@ -267,32 +169,17 @@ class BlockList extends React.Component<Props, State> {
 		}
 	}
 
-	public handleClickExportAll = () => {
-		const checked = this.props.blocks.every(b => b.export);
-		const blocks = this.props.blocks.map(block => ({
-			...block,
-			export: !checked
-		}));
-		this.props.onChange(blocks);
-	}
-
 	public render() {
 		const {classes, blocks, fullScreen} = this.props;
-		const focusedBlock = blocks.find(b => b.id === this.state.focusedBlock);
 
 		return (
-			<div className={cls(classes.wrapper, {[classes.focus]: this.state.focusedBlock !== -1})}>
+			<div className={classes.wrapper}>
 				<div className={classes.root}>
 					{blocks.map((block, index) =>
-						this.getBlock(block, index, block.id === this.state.focusedBlock, fullScreen)
+						this.getBlock(block, index, fullScreen)
 					)}
-					<div className={classes.listActions}>
-						<button className="timeline" onClick={this.handleAddEnd}>
-							Add Block
-						</button>
-					</div>
 				</div>
-				{focusedBlock && (
+				{/* {focusedBlock && (
 					<div
 						className={classes.colorChooser}
 						style={{display: this.state.showColorPicker ? 'flex' : 'none'}}
@@ -312,7 +199,7 @@ class BlockList extends React.Component<Props, State> {
 							</div>
 						</div>
 					</div>
-				)}
+				)} */}
 			</div>
 		);
 	}
