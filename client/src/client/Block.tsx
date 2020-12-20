@@ -259,7 +259,6 @@ class Block extends React.PureComponent<Props, State> {
 
 	public handleMoveUp = (evt: React.MouseEvent) => {
 		evt.stopPropagation();
-		console.log(this.props.block.id);
 		this.props.moveBlock(this.props.index - 1, this.props.index);
 	}
 
@@ -342,7 +341,7 @@ class Block extends React.PureComponent<Props, State> {
 								value={block.body}
 								onChange={this.getInputHandler('body')}
 								spellCheck={false}
-								autoFocus
+								autoFocus={!block.showTitle}
 							/>
 						)}
 						<pre className={classes.textarea}>

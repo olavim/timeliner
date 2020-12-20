@@ -589,7 +589,14 @@ class App extends React.Component<AppProps, State> {
 	}
 
 	public getBlockChangeHandler = (row: number, col: number) => (data: BlockData[]) => {
-		const timeline = cloneDeep(this.state.timeline);
+		let timeline = cloneDeep(this.state.timeline);
+		const focusedBlockPos = this.getFocusedBlock(timeline);
+		const hasNewFocusedBlock = data.some(b => b.focused);
+
+		if (focusedBlockPos && hasNewFocusedBlock) {
+			timeline = this.unfocusBlocks(timeline);
+		}
+
 		timeline!.data[row].columns[col] = data;
 
 		if (this.props.auth.isAuthenticated) {

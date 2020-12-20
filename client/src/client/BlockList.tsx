@@ -9,7 +9,7 @@ const memoize = (_memoize as any).default;
 const styles = createStyles({
 	focus: {},
 	wrapper: {
-		minHeight: '5rem',
+		minHeight: '8rem',
 		height: '100%',
 		maxWidth: '50rem',
 		width: 'calc(100% - 6rem)',
@@ -97,6 +97,14 @@ const styles = createStyles({
 			flex: '1 1 auto',
 			width: '100%'
 		}
+	},
+	blockPreview: {
+		display: 'none',
+		width: '100%',
+		flexDirection: 'column',
+		'$wrapper:hover &': {
+			display: 'flex'
+		}
 	}
 });
 
@@ -117,6 +125,17 @@ interface Props extends WithStyles<typeof styles> {
 	onChange: (blocks: BlockData[]) => any;
 	onClickBlock: (idx: number) => any;
 }
+
+const previewBlock: BlockData = {
+	id: null,
+	title: ' ',
+	body: ' ',
+	indent: 0,
+	showTitle: true,
+	showBody: true,
+	focused: false,
+	color: '#ffcc88'
+};
 
 class BlockList extends React.Component<Props> {
 	public getBlock = memoize(
@@ -142,6 +161,16 @@ class BlockList extends React.Component<Props> {
 			blocks[index] = newBlock;
 			this.props.onChange(blocks);
 		}
+	}
+
+	public handleAddBlock = () => {
+		this.props.onChange([{
+			...previewBlock,
+			id: new Date().getTime(),
+			title: '',
+			body: '',
+			focused: true
+		}]);
 	}
 
 	public getPresetColors = () => {
@@ -178,6 +207,18 @@ class BlockList extends React.Component<Props> {
 				<div className={classes.root}>
 					{blocks.map((block, index) =>
 						this.getBlock(block, index, fullScreen)
+					)}
+					{blocks.length === 0 && (
+						<div className={classes.blockPreview}>
+							<Block
+								index={0}
+								fullScreen={fullScreen}
+								onChange={this.handleChangeBlock}
+								onClick={this.handleAddBlock}
+								block={previewBlock}
+								moveBlock={this.handleMoveBlock}
+							/>
+						</div>
 					)}
 				</div>
 				{/* {focusedBlock && (
