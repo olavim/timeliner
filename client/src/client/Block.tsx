@@ -13,6 +13,7 @@ import {
 } from 'react-dnd';
 import hex2rgba from 'hex-to-rgba';
 import isMobile from '@/lib/is-mobile';
+import {isEqual} from 'lodash';
 
 const styles = createStyles({
 	focus: {},
@@ -437,7 +438,8 @@ const dragSource = DragSource<OwnProps, BlockSourceCollectedProps>(
 		connectDragSource: connect.dragSource(),
 		connectDragPreview: connect.dragPreview(),
 		isDragging: props.block.id === monitor.getItem()?.id
-	})
+	}),
+	{arePropsEqual: (first, second) => isEqual(first.block, second.block)}
 );
 
 export default dropTarget(dragSource(StyledBlock));

@@ -242,11 +242,12 @@ const styles = createStyles({
 	},
 	blockList: {},
 	blockPreview: {
-		display: 'none',
+		display: 'flex',
 		width: '100%',
 		flexDirection: 'column',
-		'$blockList:hover &': {
-			display: 'flex'
+		opacity: 0,
+		'$root:not($dragging) $blockList:hover &': {
+			opacity: 1
 		},
 		'$dragging &': {
 			opacity: 0
@@ -833,6 +834,32 @@ class App extends React.Component<AppProps, State> {
 		});
 	};
 
+	public handleAddColumnLeft = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
+
+			for (const rowData of timeline.data) {
+				rowData.columns.splice(pos.column, 0, []);
+			}
+
+			return {timeline};
+		});
+	};
+
+	public handleAddColumnRight = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
+
+			for (const rowData of timeline.data) {
+				rowData.columns.splice(pos.column + 1, 0, []);
+			}
+
+			return {timeline};
+		});
+	};
+
 	public render() {
 		const {classes, fullScreen, auth, isDragging} = this.props;
 		const {
@@ -876,8 +903,8 @@ class App extends React.Component<AppProps, State> {
 			{icon: MoveColumnLeftIcon},
 			{icon: MoveRowUpIcon},
 			{icon: MoveRowDownIcon},
-			{icon: AddColumnLeftIcon},
-			{icon: AddColumnRightIcon},
+			{icon: AddColumnLeftIcon, onClick: this.handleAddColumnLeft},
+			{icon: AddColumnRightIcon, onClick: this.handleAddColumnRight},
 			{icon: AddRowAboveIcon, onClick: this.handleAddRowAbove},
 			{icon: AddRowBelowIcon, onClick: this.handleAddRowBelow},
 			{icon: RemoveColumnIcon},
@@ -885,7 +912,7 @@ class App extends React.Component<AppProps, State> {
 		];
 
 		return (
-			<div className={cls(classes.root, {[classes.dragging: isDragging]})}>
+			<div className={cls(classes.root, {[classes.dragging]: isDragging})}>
 				{exporting && (
 					<div className={classes.progressOverlay}>
 						<CircularProgress disableShrink/>
