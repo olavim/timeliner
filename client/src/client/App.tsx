@@ -126,8 +126,21 @@ const styles = createStyles({
 		display: 'flex',
 		flexDirection: 'row',
 		justifyContent: 'flex-start',
-		flex: '1 1 auto',
-		alignItems: 'flex-start'
+		alignItems: 'flex-start',
+		flex: '0 0 auto',
+		'&:last-child': {
+			flex: '1 1 auto'
+		}
+	},
+	rowTitle: {
+		flex: '0 0 2rem',
+		width: '100%',
+		backgroundColor: 'rgba(0,0,0,0.1)',
+		display: 'flex',
+		justifyContent: 'flex-start',
+		alignItems: 'center',
+		padding: '0.4rem 1rem',
+		fontWeight: 600
 	},
 	progressOverlay: {
 		width: '100%',
@@ -325,7 +338,9 @@ class App extends React.Component<AppProps, State> {
 	}
 
 	public handleDocumentClick = (_evt: any) => {
-		this.unfocusBlocks();
+		this.setState(state => {
+			return {timeline: this.unfocusBlocks(cloneDeep(state.timeline!))};
+		})
 	}
 
 	public componentDidUpdate(_prevProps: any, prevState: State) {
@@ -537,8 +552,12 @@ class App extends React.Component<AppProps, State> {
 		});
 	}
 
-	public getFocusedBlock = () => {
-		const rows = this.state.timeline?.data ?? [];
+	public getFocusedBlock = (timeline?: GetTimeline) => {
+		if (!timeline) {
+			timeline = this.state.timeline;
+		}
+
+		const rows = timeline?.data ?? [];
 
 		for (let r = 0; r < rows.length; r++) {
 			for (let c = 0; c < rows[r].columns.length; c++) {
@@ -552,6 +571,22 @@ class App extends React.Component<AppProps, State> {
 
 		return null;
 	};
+
+	public unfocusBlocks = (timeline?: GetTimeline) => {
+		if (!timeline?.data) {
+			return timeline;
+		}
+
+		for (let r = 0; r < timeline.data.length; r++) {
+			for (let c = 0; c < timeline.data[r].columns.length; c++) {
+				for (let i = 0; i < timeline.data[r].columns[c].length; i++) {
+					timeline.data[r].columns[c][i].focused = false;
+				}
+			}
+		}
+
+		return timeline;
+	}
 
 	public getBlockChangeHandler = (row: number, col: number) => (data: BlockData[]) => {
 		const timeline = cloneDeep(this.state.timeline);
@@ -570,7 +605,7 @@ class App extends React.Component<AppProps, State> {
 		this.unfocusBlocks();
 
 		this.setState(state => {
-			const timeline = state.timeline;
+			const timeline = this.unfocusBlocks(cloneDeep(state.timeline));
 			if (timeline!.data[row].columns[col][idx]) {
 				timeline!.data[row].columns[col][idx].focused = true;
 			}
@@ -579,84 +614,124 @@ class App extends React.Component<AppProps, State> {
 		});
 	}
 
-	public unfocusBlocks = () => {
-		const timeline = cloneDeep(this.state.timeline);
-
-		for (let r = 0; r < timeline!.data.length; r++) {
-			for (let c = 0; c < timeline!.data[r].columns.length; c++) {
-				for (let i = 0; i < timeline!.data[r].columns[c].length; i++) {
-					timeline!.data[r].columns[c][i].focused = false;
-				}
-			}
-		}
-
-		this.setState({timeline});
-	}
-
 	public handleAddBlockAbove = () => {
-		const pos = this.getFocusedBlock()!;
-		const timeline = cloneDeep(this.state.timeline)!;
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
 
-		timeline.data[pos.row].columns[pos.column][pos.index].focused = false;
-		timeline.data[pos.row].columns[pos.column].splice(pos.index, 0, {
-			...timeline.data[pos.row].columns[pos.column][pos.index],
-			id: new Date().getTime(),
-			focused: true,
-			body: '',
-			title: ''
+			timeline.data[pos.row].columns[pos.column][pos.index].focused = false;
+			timeline.data[pos.row].columns[pos.column].splice(pos.index, 0, {
+				...timeline.data[pos.row].columns[pos.column][pos.index],
+				id: new Date().getTime(),
+				focused: true,
+				body: '',
+				title: ''
+			});
+
+			return {timeline};
 		});
-
-		this.setState({timeline});
 	};
 
 	public handleAddBlockBelow = () => {
-		const pos = this.getFocusedBlock()!;
-		const timeline = cloneDeep(this.state.timeline)!;
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
 
-		timeline.data[pos.row].columns[pos.column][pos.index].focused = false;
-		timeline.data[pos.row].columns[pos.column].splice(pos.index + 1, 0, {
-			...timeline.data[pos.row].columns[pos.column][pos.index],
-			id: new Date().getTime(),
-			focused: true,
-			body: '',
-			title: ''
+			timeline.data[pos.row].columns[pos.column][pos.index].focused = false;
+			timeline.data[pos.row].columns[pos.column].splice(pos.index + 1, 0, {
+				...timeline.data[pos.row].columns[pos.column][pos.index],
+				id: new Date().getTime(),
+				focused: true,
+				body: '',
+				title: ''
+			});
+
+			return {timeline};
 		});
-
-		this.setState({timeline});
 	};
 
 	public handleMoveBlockUp = () => {
-		const pos = this.getFocusedBlock()!;
-
-		if (pos.index === 0) {
-			return;
-		}
-
 		this.setState(state => {
-			const timeline = state.timeline!;
-			const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
-			const prevBlock = timeline.data[pos.row].columns[pos.column][pos.index - 1];
-			timeline.data[pos.row].columns[pos.column][pos.index] = prevBlock;
-			timeline.data[pos.row].columns[pos.column][pos.index - 1] = focusedBlock;
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
+
+			if (pos.index > 0) {
+				const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
+				const prevBlock = timeline.data[pos.row].columns[pos.column][pos.index - 1];
+				timeline.data[pos.row].columns[pos.column][pos.index] = prevBlock;
+				timeline.data[pos.row].columns[pos.column][pos.index - 1] = focusedBlock;
+			}
 
 			return {timeline};
 		});
 	};
 
 	public handleMoveBlockDown = () => {
-		const pos = this.getFocusedBlock()!;
-
-		if (pos.index === this.state.timeline!.data[pos.row].columns[pos.column].length - 1) {
-			return;
-		}
-
 		this.setState(state => {
-			const timeline = state.timeline!;
-			const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
-			const nextBlock = timeline.data[pos.row].columns[pos.column][pos.index + 1];
-			timeline.data[pos.row].columns[pos.column][pos.index] = nextBlock;
-			timeline.data[pos.row].columns[pos.column][pos.index + 1] = focusedBlock;
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
 
+			if (pos.index < this.state.timeline!.data[pos.row].columns[pos.column].length - 1) {
+				const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
+				const nextBlock = timeline.data[pos.row].columns[pos.column][pos.index + 1];
+				timeline.data[pos.row].columns[pos.column][pos.index] = nextBlock;
+				timeline.data[pos.row].columns[pos.column][pos.index + 1] = focusedBlock;
+			}
+
+			return {timeline};
+		});
+	};
+
+	public handleRemoveBlock = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
+
+			timeline.data[pos.row].columns[pos.column].splice(pos.index, 1);
+			return {timeline};
+		});
+	};
+
+	public handleIndentBlock = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
+
+			const indentation = timeline.data[pos.row].columns[pos.column][pos.index].indent;
+			timeline.data[pos.row].columns[pos.column][pos.index].indent = Math.min(10, indentation + 1);
+
+			return {timeline};
+		});
+	};
+
+	public handleOutdentBlock = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
+
+			const indentation = timeline.data[pos.row].columns[pos.column][pos.index].indent;
+			timeline.data[pos.row].columns[pos.column][pos.index].indent = Math.max(0, indentation - 1);
+
+			return {timeline};
+		});
+	};
+
+	public handleAddRowAbove = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
+
+			timeline.data.splice(pos.row, 0, {title: '', columns: [[]]});
+			return {timeline};
+		});
+	};
+
+	public handleAddRowBelow = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = this.getFocusedBlock(timeline)!;
+
+			timeline.data.splice(pos.row + 1, 0, {title: '', columns: [[]]});
 			return {timeline};
 		});
 	};
@@ -692,9 +767,9 @@ class App extends React.Component<AppProps, State> {
 			{icon: MoveBlockDownIcon, onClick: this.handleMoveBlockDown},
 			{icon: AddBlockAboveIcon, onClick: this.handleAddBlockAbove},
 			{icon: AddBlockBelowIcon, onClick: this.handleAddBlockBelow},
-			{icon: RemoveBlockIcon},
-			{icon: IndentIcon},
-			{icon: OutdentIcon},
+			{icon: RemoveBlockIcon, onClick: this.handleRemoveBlock},
+			{icon: IndentIcon, onClick: this.handleIndentBlock},
+			{icon: OutdentIcon, onClick: this.handleOutdentBlock},
 			{icon: AddTitleIcon},
 			{icon: RemoveTitleIcon},
 			{icon: AddBodyIcon},
@@ -706,8 +781,8 @@ class App extends React.Component<AppProps, State> {
 			{icon: MoveRowDownIcon},
 			{icon: AddColumnLeftIcon},
 			{icon: AddColumnRightIcon},
-			{icon: AddRowAboveIcon},
-			{icon: AddRowBelowIcon},
+			{icon: AddRowAboveIcon, onClick: this.handleAddRowAbove},
+			{icon: AddRowBelowIcon, onClick: this.handleAddRowBelow},
 			{icon: RemoveColumnIcon},
 			{icon: RemoveRowIcon},
 		];
@@ -799,7 +874,7 @@ class App extends React.Component<AppProps, State> {
 							<IconButton
 								key={idx}
 								style={{padding: '0.75rem'}}
-								disabled={!focusedBlockPos}
+								disabled={!focusedBlockPos || !obj.onClick}
 								onClick={obj.onClick}
 							>
 								<img src={obj.icon} style={{width: '24px'}}/>
@@ -808,18 +883,23 @@ class App extends React.Component<AppProps, State> {
 					</div>
 					<div className={classes.content} ref={this.listContainerRef} onClick={this.handleDocumentClick}>
 						{timeline ? (
-							timeline.data.map((blockLists, row) => (
-								<div className={classes.contentRow} key={row}>
-									{blockLists.columns.map((list, col) => (
-										<BlockList
-											key={`${row}:${col}`}
-											fullScreen={fullScreen}
-											blocks={list}
-											onChange={this.getBlockChangeHandler(row, col)}
-											onClickBlock={this.getBlockClickHandler(row, col)}
-										/>
-									))}
-								</div>
+							timeline.data.map((row, rowIdx) => (
+								<React.Fragment key={rowIdx}>
+									<div className={classes.rowTitle}>
+										{row.title || `#${rowIdx + 1}`}
+									</div>
+									<div className={classes.contentRow}>
+										{row.columns.map((list, col) => (
+											<BlockList
+												key={`${rowIdx}:${col}`}
+												fullScreen={fullScreen}
+												blocks={list}
+												onChange={this.getBlockChangeHandler(rowIdx, col)}
+												onClickBlock={this.getBlockClickHandler(rowIdx, col)}
+											/>
+										))}
+									</div>
+								</React.Fragment>
 							))
 						) : (
 							<div className={classes.noDocumentContainer}>

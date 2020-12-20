@@ -20,7 +20,7 @@ const styles = createStyles({
 	focus: {},
 	root: {
 		position: 'relative',
-		marginTop: '0.6rem',
+		margin: '0.3rem 0',
 		display: 'flex',
 		flexDirection: 'column',
 		cursor: 'pointer',

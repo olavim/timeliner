@@ -9,7 +9,8 @@ const memoize = (_memoize as any).default;
 const styles = createStyles({
 	focus: {},
 	wrapper: {
-		minHeight: '100%',
+		minHeight: '5rem',
+		height: '100%',
 		maxWidth: '50rem',
 		width: 'calc(100% - 6rem)',
 		display: 'flex',
@@ -34,7 +35,7 @@ const styles = createStyles({
 	root: {
 		width: '100%',
 		position: 'relative',
-		padding: '0.4rem 1rem 60vh 1rem',
+		padding: '0.7rem 1rem',
 		display: 'flex',
 		flexDirection: 'column',
 		boxSizing: 'border-box'
