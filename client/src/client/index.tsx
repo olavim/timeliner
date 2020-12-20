@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import {DragDropContextProvider} from 'react-dnd';
-import TouchBackend from 'react-dnd-touch-backend';
+import {DndProvider} from 'react-dnd';
+import {TouchBackend} from 'react-dnd-touch-backend';
 import {createBrowserHistory} from 'history';
 import App from './App';
 import BlockPreview from './BlockPreview';
@@ -26,10 +26,10 @@ ReactDOM.render(
 		onRedirectCallback={onRedirectCallback}
 		scope="openid email profile"
 	>
-		<DragDropContextProvider backend={TouchBackend({enableMouseEvents: true})}>
+		<DndProvider backend={TouchBackend} options={{enableMouseEvents: true}}>
 			<App/>
 			<BlockPreview/>
-		</DragDropContextProvider>
+		</DndProvider>
 	</Auth0Provider>,
 	document.getElementById('root') as HTMLElement
 );

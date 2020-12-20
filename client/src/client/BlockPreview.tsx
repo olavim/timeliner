@@ -1,8 +1,8 @@
 import * as React from 'react';
-import DragLayer from 'react-dnd/lib/DragLayer';
+import {DragLayer, XYCoord} from 'react-dnd';
 import {DragLayerMonitor} from 'react-dnd';
 import {createStyles, WithStyles, withStyles} from '@material-ui/core';
-import {BlockData} from './BlockList';
+import {BlockData} from './Block';
 
 function collect(monitor: DragLayerMonitor) {
 	return {
@@ -12,7 +12,7 @@ function collect(monitor: DragLayerMonitor) {
 	};
 }
 
-function getItemStyles(currentOffset: {x: number; y: number}): React.CSSProperties {
+function getItemStyles(currentOffset: XYCoord | null): React.CSSProperties {
 	if (!currentOffset) {
 		return {display: 'none'};
 	}
@@ -32,12 +32,12 @@ const styles = createStyles({
 	root: {
 		position: 'absolute',
 		top: 0,
-		border: '1px solid rgba(0,0,0,0.2)',
-		boxShadow: '0 0 0.3rem 0 rgba(0,0,0,0.13)',
+		boxShadow: '0 1px 0.1rem 0 rgba(0,0,0,0.2)',
 		overflow: 'hidden',
 		borderRadius: '0.4rem',
 		backgroundColor: '#fafafa',
-		cursor: 'grabbing'
+		cursor: 'grabbing',
+		pointerEvents: 'none'
 	},
 	title: {
 		minHeight: '1.5rem',
@@ -46,7 +46,7 @@ const styles = createStyles({
 		opacity: 0.8,
 		'& pre': {
 			padding: '0.6rem',
-			whiteSpace: 'normal',
+			whiteSpace: 'pre-wrap',
 			margin: 0,
 			fontWeight: 500,
 			fontFamily: `'Roboto Mono', 'Courier New', Courier, monospace`,
@@ -60,7 +60,7 @@ const styles = createStyles({
 		opacity: 0.8,
 		'& pre': {
 			padding: '0.6rem',
-			whiteSpace: 'normal',
+			whiteSpace: 'pre-wrap',
 			margin: 0,
 			fontFamily: `'Roboto Mono', 'Courier New', Courier, monospace`,
 			fontSize: '11px'
@@ -68,14 +68,13 @@ const styles = createStyles({
 	}
 });
 
-interface Props extends WithStyles<typeof styles> {
+interface CollectedProps {
 	item: any;
 	isDragging: boolean;
-	currentOffset: {
-		x: number;
-		y: number;
-	};
+	currentOffset: XYCoord | null;
 }
+
+type Props = CollectedProps & WithStyles<typeof styles>;
 
 const BlockPreview = withStyles(styles)(({item, isDragging, currentOffset, classes}: Props) => {
 	if (!isDragging || !item || !item.block) {
@@ -84,7 +83,7 @@ const BlockPreview = withStyles(styles)(({item, isDragging, currentOffset, class
 
 	const block = item.block as BlockData;
 	const windowWidth = window.innerWidth;
-	let blockWidth = windowWidth < 700 ? (windowWidth - 120) / 10 : 58;
+	let blockWidth = windowWidth < 700 ? (windowWidth - 120) / 10 : 48;
 	blockWidth = blockWidth - block.indent * 4;
 	blockWidth = Math.round(blockWidth * 10) / 10;
 
@@ -116,4 +115,4 @@ const BlockPreview = withStyles(styles)(({item, isDragging, currentOffset, class
 	);
 });
 
-export default DragLayer(collect)(BlockPreview);
+export default DragLayer<Props, CollectedProps>(collect)(BlockPreview);

@@ -1,4 +1,4 @@
-import {BlockData} from '@/BlockList';
+import {BlockData} from '@/Block';
 import PDFDocument from '@/lib/vendor/pdfkit.standalone';
 import blobStream from 'blob-stream';
 import RobotoMono from '../fonts/RobotoMono-Regular.ttf';

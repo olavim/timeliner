@@ -3,6 +3,7 @@ import {findDOMNode} from 'react-dom';
 import cls from 'classnames';
 import {WithStyles, createStyles, withStyles} from '@material-ui/core';
 import TextareaAutosize from 'react-autosize-textarea';
+import {isEqual} from 'lodash';
 import {
 	DragSource,
 	DropTarget,
@@ -13,11 +14,11 @@ import {
 } from 'react-dnd';
 import {XYCoord} from 'dnd-core';
 import hex2rgba from 'hex-to-rgba';
-import {BlockData} from './BlockList';
 import isMobile from '@/lib/is-mobile';
 
 const styles = createStyles({
 	focus: {},
+	dragging: {},
 	root: {
 		position: 'relative',
 		margin: '0.3rem 0',
@@ -37,6 +38,9 @@ const styles = createStyles({
 		},
 		'& button:not(:disabled):hover': {
 			opacity: 0.6
+		},
+		'&$dragging': {
+			cursor: 'grabbing'
 		}
 	},
 	outerContent: {
@@ -49,15 +53,17 @@ const styles = createStyles({
 		flex: '1 1 auto',
 		display: 'flex',
 		flexDirection: 'column',
-		border: '1px solid rgba(0,0,0,0.2)',
-		boxShadow: '0 0 0.3rem 0 rgba(0,0,0,0.13)',
+		boxShadow: '0 1px 0.1rem 0 rgba(0,0,0,0.2)',
 		borderRadius: '0.4rem',
 		overflow: 'hidden',
 		'$focus &': {
 			boxShadow: '0 0 2rem 0 rgba(0,67,255,0.43)'
 		},
-		'$root:not($focus) &:hover': {
+		'$root:not($focus):not($dragging) &:hover': {
 			opacity: 0.8
+		},
+		'$dragging &': {
+			backgroundColor: 'rgba(0, 0, 0, 0.05)'
 		}
 	},
 	title: {
@@ -73,6 +79,9 @@ const styles = createStyles({
 			padding: '0.6rem',
 			backgroundColor: 'transparent',
 			fontWeight: 500
+		},
+		'$dragging &': {
+			opacity: 0
 		}
 	},
 	text: {
@@ -90,6 +99,9 @@ const styles = createStyles({
 			border: 'none',
 			padding: '0.6rem',
 			backgroundColor: 'transparent'
+		},
+		'$dragging &': {
+			opacity: 0
 		}
 	},
 	textarea: {
@@ -128,13 +140,30 @@ const styles = createStyles({
 	}
 });
 
+export interface BlockPosition {
+	row: number;
+	column: number;
+	index: number;
+}
+
+export interface BlockData {
+	id: any;
+	title: string;
+	body: string;
+	showTitle: boolean;
+	showBody: boolean;
+	color: string;
+	indent: number;
+	focused: boolean;
+}
+
 interface OwnProps {
 	fullScreen?: boolean;
 	block: BlockData;
-	index: number;
-	moveBlock: (hoverIndex: number, dragIndex: number) => any;
+	position: BlockPosition;
+	onMoveBlock: (hoverPosition: BlockPosition, dragPosition: BlockPosition) => any;
 	onChange: (id: any, prop: keyof BlockData, value: any) => any;
-	onClick: (idx: number) => any;
+	onClick: (position: BlockPosition) => any;
 }
 
 interface BlockSourceCollectedProps {
@@ -148,10 +177,10 @@ interface BlockTargetCollectedProps {
 }
 
 const cardSource = {
-	beginDrag({block, index}: OwnProps) {
+	beginDrag({block, position}: OwnProps) {
 		return {
 			id: block.id,
-			index,
+			position,
 			block
 		};
 	}
@@ -162,11 +191,12 @@ const cardTarget = {
 		if (!component) {
 			return null;
 		}
-		const dragIndex = monitor.getItem().index;
-		const hoverIndex = props.index;
+
+		const dragPos = monitor.getItem().position;
+		const hoverPos = props.position;
 
 		// Don't replace items with themselves
-		if (dragIndex === hoverIndex) {
+		if (isEqual(dragPos, hoverPos)) {
 			return null;
 		}
 
@@ -186,24 +216,26 @@ const cardTarget = {
 		// When dragging downwards, only move when the cursor is below 50%
 		// When dragging upwards, only move when the cursor is above 50%
 
-		// Dragging downwards
-		if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-			return null;
-		}
+		if (dragPos.row === hoverPos.row && hoverPos.column === hoverPos.column) {
+			// Dragging downwards
+			if (dragPos.index < hoverPos.index && hoverClientY < hoverMiddleY) {
+				return null;
+			}
 
-		// Dragging upwards
-		if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-			return null;
+			// Dragging upwards
+			if (dragPos.index > hoverPos.index && hoverClientY > hoverMiddleY) {
+				return null;
+			}
 		}
 
 		// Time to actually perform the action
-		props.moveBlock(dragIndex, hoverIndex);
+		props.onMoveBlock(dragPos, hoverPos);
 
 		// Note: we're mutating the monitor item here!
 		// Generally it's better to avoid mutations,
 		// but it's good here for the sake of performance
 		// to avoid expensive index searches.
-		monitor.getItem().index = hoverIndex;
+		monitor.getItem().position = hoverPos;
 		return null;
 	}
 };
@@ -257,16 +289,6 @@ class Block extends React.PureComponent<Props, State> {
 		}
 	}
 
-	public handleMoveUp = (evt: React.MouseEvent) => {
-		evt.stopPropagation();
-		this.props.moveBlock(this.props.index - 1, this.props.index);
-	}
-
-	public handleMoveDown = (evt: React.MouseEvent) => {
-		evt.stopPropagation();
-		this.props.moveBlock(this.props.index + 1, this.props.index);
-	}
-
 	public handleToggleDeleteDialog = (show: boolean) => () => {
 		this.setState({showDeleteDialog: show})
 	}
@@ -283,7 +305,7 @@ class Block extends React.PureComponent<Props, State> {
 		evt.stopPropagation();
 
 		if (this.state.prepareClick) {
-			this.props.onClick(this.props.index);
+			this.props.onClick(this.props.position);
 		}
 	}
 
@@ -299,11 +321,8 @@ class Block extends React.PureComponent<Props, State> {
 			connectDragSource,
 			connectDropTarget,
 			connectDragPreview,
-			isDragging,
-			index
+			isDragging
 		} = this.props;
-
-		const tabIndex = index * 2 + 1;
 
 		let contentElem = (
 			<div className={classes.content}>
@@ -315,7 +334,6 @@ class Block extends React.PureComponent<Props, State> {
 						{block.focused && (
 							<TextareaAutosize
 								className={classes.textarea}
-								tabIndex={tabIndex}
 								ref={this.titleRef}
 								value={block.title}
 								onChange={this.getInputHandler('title')}
@@ -336,7 +354,6 @@ class Block extends React.PureComponent<Props, State> {
 						{block.focused && (
 							<TextareaAutosize
 								className={classes.textarea}
-								tabIndex={tabIndex + (block.showTitle ? 1 : 0)}
 								ref={this.bodyRef}
 								value={block.body}
 								onChange={this.getInputHandler('body')}
@@ -353,18 +370,14 @@ class Block extends React.PureComponent<Props, State> {
 		);
 
 		if (!block.focused && !isMobile.any()) {
-			contentElem = connectDragSource(contentElem);
+			contentElem = connectDragSource(contentElem)!;
 		}
 
 		let elem = (
 			<div
 				key={block.id}
-				className={cls(classes.root, {[classes.focus]: block.focused})}
-				style={{
-					paddingLeft: `${block.indent * 4}rem`,
-					opacity: isDragging ? 0 : 1,
-					cursor: isDragging ? 'grabbing' : 'pointer'
-				}}
+				className={cls(classes.root, {[classes.focus]: block.focused, [classes.dragging]: isDragging})}
+				style={{paddingLeft: `${block.indent * 4}rem`}}
 				onMouseDown={this.handleMouseDown}
 				onClick={this.handleClick}
 			>
@@ -399,8 +412,8 @@ class Block extends React.PureComponent<Props, State> {
 			</div>
 		);
 
-		elem = connectDropTarget(elem);
-		elem = connectDragPreview(elem);
+		elem = connectDropTarget(elem)!;
+		elem = connectDragPreview(elem)!;
 
 		return elem;
 	}
@@ -419,10 +432,10 @@ const dropTarget = DropTarget<OwnProps, BlockTargetCollectedProps>(
 const dragSource = DragSource<OwnProps, BlockSourceCollectedProps>(
 	'block',
 	cardSource,
-	(connect, monitor) => ({
+	(connect, monitor, props) => ({
 		connectDragSource: connect.dragSource(),
 		connectDragPreview: connect.dragPreview(),
-		isDragging: monitor.isDragging()
+		isDragging: props.block.id === monitor.getItem()?.id
 	})
 );
 

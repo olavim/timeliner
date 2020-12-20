@@ -2,6 +2,7 @@ import * as React from 'react';
 import {findDOMNode} from 'react-dom';
 import axios, {AxiosInstance} from 'axios';
 import {cloneDeep, pick, debounce} from 'lodash';
+import cls from 'classnames';
 import {
 	createStyles,
 	WithStyles,
@@ -20,12 +21,13 @@ import withMobileDialog, {InjectedProps as WithMobileDialog} from '@material-ui/
 import runtime from 'serviceworker-webpack-plugin/lib/runtime';
 import WebFont from 'webfontloader';
 import FileSaver from 'file-saver';
+import * as _memoize from 'memoizee';
 import MenuIcon from '@material-ui/icons/Menu';
 import FileIcon from '@material-ui/icons/InsertDriveFile';
 import FileTreeIcon from '@material-ui/icons/FolderOpen';
 import DownloadIcon from '@material-ui/icons/GetApp';
 import githubIcon from './github-32px.png';
-import BlockList, {BlockData} from './BlockList';
+import BlockList from './BlockList';
 import withAuth, {WithAuthProps} from '@/hocs/with-auth';
 import isMobile from '@/lib/is-mobile';
 import MenuDrawer from '@/MenuDrawer';
@@ -52,8 +54,13 @@ import AddRowAboveIcon from './images/add-row-above.svg';
 import AddRowBelowIcon from './images/add-row-below.svg';
 import RemoveColumnIcon from './images/remove-column.svg';
 import RemoveRowIcon from './images/remove-row.svg';
+import Block, {BlockPosition, BlockData} from './Block';
+import {DragLayer} from 'react-dnd';
+
+const memoize = (_memoize as any).default;
 
 const styles = createStyles({
+	dragging: {},
 	root: {
 		display: 'flex',
 		flexDirection: 'row',
@@ -232,6 +239,18 @@ const styles = createStyles({
 		'& svg': {
 			fontSize: '1.8rem'
 		}
+	},
+	blockList: {},
+	blockPreview: {
+		display: 'none',
+		width: '100%',
+		flexDirection: 'column',
+		'$blockList:hover &': {
+			display: 'flex'
+		},
+		'$dragging &': {
+			opacity: 0
+		}
 	}
 });
 
@@ -272,7 +291,22 @@ interface State {
 	appBarActions: any[];
 }
 
-type AppProps = WithMobileDialog & WithStyles<typeof styles> & WithAuthProps;
+interface CollectProps {
+	isDragging: boolean;
+}
+
+type AppProps = CollectProps & WithMobileDialog & WithStyles<typeof styles> & WithAuthProps;
+
+const previewBlock: BlockData = {
+	id: null,
+	title: ' ',
+	body: ' ',
+	indent: 0,
+	showTitle: true,
+	showBody: true,
+	focused: false,
+	color: '#ffcc88'
+};
 
 class App extends React.Component<AppProps, State> {
 	public listContainerRef = React.createRef<any>();
@@ -306,6 +340,21 @@ class App extends React.Component<AppProps, State> {
 			return config;
 		});
 	}
+
+	public getBlock = memoize(
+		(block: BlockData, pos: BlockPosition, fullScreen?: boolean) => (
+			<Block
+				key={block.id}
+				block={block}
+				position={pos}
+				fullScreen={fullScreen}
+				onChange={this.handleChangeBlock}
+				onClick={this.handleClickBlock}
+				onMoveBlock={this.handleDragBlock}
+			/>
+		),
+		{normalizer: (args: any) => args[2] ? Date.now() : JSON.stringify(args)}
+	);
 
 	public componentDidMount() {
 		if (
@@ -552,7 +601,7 @@ class App extends React.Component<AppProps, State> {
 		});
 	}
 
-	public getFocusedBlock = (timeline?: GetTimeline) => {
+	public getFocusedBlock = (timeline?: GetTimeline): BlockPosition | null => {
 		if (!timeline) {
 			timeline = this.state.timeline;
 		}
@@ -608,14 +657,47 @@ class App extends React.Component<AppProps, State> {
 		this.setState({timeline});
 	}
 
-	public getBlockClickHandler = (row: number, col: number) => (idx: number) => {
-		this.unfocusBlocks();
+	public handleChangeBlock = (pos: BlockPosition, prop: keyof BlockData, value: any) => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			Object.assign(timeline.data[pos.row].columns[pos.column][pos.index], {[prop]: value});
+			return {timeline};
+		});
+	}
 
+	public handleClickBlock = ({row, column, index}: BlockPosition) => {
 		this.setState(state => {
 			const timeline = this.unfocusBlocks(cloneDeep(state.timeline));
-			if (timeline!.data[row].columns[col][idx]) {
-				timeline!.data[row].columns[col][idx].focused = true;
+			if (timeline!.data[row].columns[column][index]) {
+				timeline!.data[row].columns[column][index].focused = true;
 			}
+
+			return {timeline};
+		});
+	}
+
+	public handleDragBlock = (dragPos: BlockPosition, hoverPos: BlockPosition) => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+
+			const dragBlock = timeline.data[dragPos.row].columns[dragPos.column][dragPos.index];
+			timeline.data[dragPos.row].columns[dragPos.column].splice(dragPos.index, 1);
+			timeline.data[hoverPos.row].columns[hoverPos.column].splice(hoverPos.index, 0, dragBlock);
+
+			return {timeline};
+		});
+	}
+
+	public handleAddPreviewBlock = ({row, column}: BlockPosition) => {
+		this.setState(state => {
+			const timeline = this.unfocusBlocks(cloneDeep(state.timeline))!;
+			timeline.data[row].columns[column].push({
+				...previewBlock,
+				id: new Date().getTime(),
+				title: '',
+				body: '',
+				focused: true
+			});
 
 			return {timeline};
 		});
@@ -744,7 +826,7 @@ class App extends React.Component<AppProps, State> {
 	};
 
 	public render() {
-		const {classes, fullScreen, auth} = this.props;
+		const {classes, fullScreen, auth, isDragging} = this.props;
 		const {
 			timeline,
 			showDrawer,
@@ -795,7 +877,7 @@ class App extends React.Component<AppProps, State> {
 		];
 
 		return (
-			<div className={classes.root}>
+			<div className={cls(classes.root, {[classes.dragging: isDragging]})}>
 				{exporting && (
 					<div className={classes.progressOverlay}>
 						<CircularProgress disableShrink/>
@@ -890,20 +972,30 @@ class App extends React.Component<AppProps, State> {
 					</div>
 					<div className={classes.content} ref={this.listContainerRef} onClick={this.handleDocumentClick}>
 						{timeline ? (
-							timeline.data.map((row, rowIdx) => (
-								<React.Fragment key={rowIdx}>
+							timeline.data.map((rowData, row) => (
+								<React.Fragment key={row}>
 									<div className={classes.rowTitle}>
-										{row.title || `#${rowIdx + 1}`}
+										{rowData.title || `#${row + 1}`}
 									</div>
 									<div className={classes.contentRow}>
-										{row.columns.map((list, col) => (
-											<BlockList
-												key={`${rowIdx}:${col}`}
-												fullScreen={fullScreen}
-												blocks={list}
-												onChange={this.getBlockChangeHandler(rowIdx, col)}
-												onClickBlock={this.getBlockClickHandler(rowIdx, col)}
-											/>
+										{rowData.columns.map((blocks, column) => (
+											<BlockList key={`${row}:${column}`} className={classes.blockList}>
+												{blocks.map((block, index) =>
+													this.getBlock(block, {row, column, index}, fullScreen)
+												)}
+												{blocks.length === 0 && (
+													<div className={classes.blockPreview}>
+														<Block
+															position={{row, column, index: 0}}
+															fullScreen={fullScreen}
+															onChange={this.handleChangeBlock}
+															onClick={this.handleAddPreviewBlock}
+															block={previewBlock}
+															onMoveBlock={this.handleDragBlock}
+														/>
+													</div>
+												)}
+											</BlockList>
 										))}
 									</div>
 								</React.Fragment>
@@ -965,4 +1057,10 @@ class App extends React.Component<AppProps, State> {
 	}
 }
 
-export default withMobileDialog()(withAuth(withStyles(styles)(App)));
+function collect(monitor: any) {
+	return {
+		isDragging: monitor.isDragging() as boolean
+	}
+}
+
+export default withMobileDialog()(withAuth(withStyles(styles)(DragLayer<{}, CollectProps>(collect)(App))));

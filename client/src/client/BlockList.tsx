@@ -1,10 +1,6 @@
 import * as React from 'react';
 import {createStyles, WithStyles, withStyles} from '@material-ui/core';
-import * as _memoize from 'memoizee';
-import Block from './Block';
 import {SketchPicker as _SketchPicker} from 'react-color';
-
-const memoize = (_memoize as any).default;
 
 const styles = createStyles({
 	focus: {},
@@ -39,16 +35,6 @@ const styles = createStyles({
 		display: 'flex',
 		flexDirection: 'column',
 		boxSizing: 'border-box'
-	},
-	listActions: {
-		marginTop: '0.6rem',
-		textAlign: 'right'
-	},
-	checkboxRoot: {
-		margin: '0.5rem',
-	},
-	checkbox: {
-		border: '2px solid #00ccff'
 	},
 	colorChooser: {
 		position: 'absolute',
@@ -97,129 +83,36 @@ const styles = createStyles({
 			flex: '1 1 auto',
 			width: '100%'
 		}
-	},
-	blockPreview: {
-		display: 'none',
-		width: '100%',
-		flexDirection: 'column',
-		'$wrapper:hover &': {
-			display: 'flex'
-		}
 	}
 });
 
-export interface BlockData {
-	id: any;
-	title: string;
-	body: string;
-	showTitle: boolean;
-	showBody: boolean;
-	color: string;
-	indent: number;
-	focused: boolean;
-}
-
 interface Props extends WithStyles<typeof styles> {
-	fullScreen?: boolean;
-	blocks: BlockData[];
-	onChange: (blocks: BlockData[]) => any;
-	onClickBlock: (idx: number) => any;
+	className: string;
 }
-
-const previewBlock: BlockData = {
-	id: null,
-	title: ' ',
-	body: ' ',
-	indent: 0,
-	showTitle: true,
-	showBody: true,
-	focused: false,
-	color: '#ffcc88'
-};
 
 class BlockList extends React.Component<Props> {
-	public getBlock = memoize(
-		(block: BlockData, index: number, fullScreen?: boolean) => (
-			<Block
-				key={block.id}
-				index={index}
-				fullScreen={fullScreen}
-				onChange={this.handleChangeBlock}
-				onClick={this.props.onClickBlock}
-				block={block}
-				moveBlock={this.handleMoveBlock}
-			/>
-		),
-		{normalizer: (args: any) => args[2] ? Date.now() : JSON.stringify(args)}
-	);
+	// public getPresetColors = () => {
+	// 	const set = new Set(this.props.blocks.map(b => b.color));
+	// 	return Array.from(set);
+	// }
 
-	public handleChangeBlock = (id: any, prop: keyof BlockData, value: any) => {
-		const blocks = this.props.blocks.slice();
-		const index = blocks.findIndex(b => b.id === id);
-		if (index !== -1) {
-			const newBlock = Object.assign({}, blocks[index], {[prop]: value});
-			blocks[index] = newBlock;
-			this.props.onChange(blocks);
-		}
-	}
+	// public handleOpenColorPicker = (evt: React.MouseEvent) => {
+	// 	evt.stopPropagation();
+	// 	this.setState({showColorPicker: true});
+	// }
 
-	public handleAddBlock = () => {
-		this.props.onChange([{
-			...previewBlock,
-			id: new Date().getTime(),
-			title: '',
-			body: '',
-			focused: true
-		}]);
-	}
-
-	public getPresetColors = () => {
-		const set = new Set(this.props.blocks.map(b => b.color));
-		return Array.from(set);
-	}
-
-	public handleOpenColorPicker = (evt: React.MouseEvent) => {
-		evt.stopPropagation();
-		this.setState({showColorPicker: true});
-	}
-
-	public handleCloseColorPicker = (evt: React.MouseEvent) => {
-		evt.stopPropagation();
-		this.setState({showColorPicker: false});
-	}
-
-	public handleMoveBlock = (dragIndex: any, hoverIndex: any) => {
-		const {blocks, onChange} = this.props;
-		if (dragIndex >= 0 && hoverIndex >= 0 && dragIndex < blocks.length && hoverIndex < blocks.length) {
-			const newBlocks = blocks.slice();
-			const dragBlock = newBlocks[dragIndex];
-			newBlocks.splice(dragIndex, 1);
-			newBlocks.splice(hoverIndex, 0, dragBlock);
-			onChange(newBlocks);
-		}
-	}
+	// public handleCloseColorPicker = (evt: React.MouseEvent) => {
+	// 	evt.stopPropagation();
+	// 	this.setState({showColorPicker: false});
+	// }
 
 	public render() {
-		const {classes, blocks, fullScreen} = this.props;
+		const {classes, children, className} = this.props;
 
 		return (
-			<div className={classes.wrapper}>
+			<div className={`${classes.wrapper} ${className}`}>
 				<div className={classes.root}>
-					{blocks.map((block, index) =>
-						this.getBlock(block, index, fullScreen)
-					)}
-					{blocks.length === 0 && (
-						<div className={classes.blockPreview}>
-							<Block
-								index={0}
-								fullScreen={fullScreen}
-								onChange={this.handleChangeBlock}
-								onClick={this.handleAddBlock}
-								block={previewBlock}
-								moveBlock={this.handleMoveBlock}
-							/>
-						</div>
-					)}
+					{children}
 				</div>
 				{/* {focusedBlock && (
 					<div
