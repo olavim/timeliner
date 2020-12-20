@@ -744,11 +744,15 @@ class App extends React.Component<AppProps, State> {
 			const timeline = cloneDeep(state.timeline)!;
 			const pos = this.getFocusedBlock(timeline)!;
 
+			const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
+
 			if (pos.index > 0) {
-				const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
 				const prevBlock = timeline.data[pos.row].columns[pos.column][pos.index - 1];
 				timeline.data[pos.row].columns[pos.column][pos.index] = prevBlock;
 				timeline.data[pos.row].columns[pos.column][pos.index - 1] = focusedBlock;
+			} else if (pos.row > 0) {
+				timeline.data[pos.row].columns[pos.column].splice(pos.index, 1);
+				timeline.data[pos.row - 1].columns[pos.column].push(focusedBlock);
 			}
 
 			return {timeline};
@@ -760,11 +764,15 @@ class App extends React.Component<AppProps, State> {
 			const timeline = cloneDeep(state.timeline)!;
 			const pos = this.getFocusedBlock(timeline)!;
 
-			if (pos.index < this.state.timeline!.data[pos.row].columns[pos.column].length - 1) {
-				const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
-				const nextBlock = timeline.data[pos.row].columns[pos.column][pos.index + 1];
-				timeline.data[pos.row].columns[pos.column][pos.index] = nextBlock;
+			const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
+
+			if (pos.index < timeline.data[pos.row].columns[pos.column].length - 1) {
+				const prevBlock = timeline.data[pos.row].columns[pos.column][pos.index + 1];
+				timeline.data[pos.row].columns[pos.column][pos.index] = prevBlock;
 				timeline.data[pos.row].columns[pos.column][pos.index + 1] = focusedBlock;
+			} else if (pos.row < timeline.data.length - 1) {
+				timeline.data[pos.row].columns[pos.column].splice(pos.index, 1);
+				timeline.data[pos.row + 1].columns[pos.column].unshift(focusedBlock);
 			}
 
 			return {timeline};

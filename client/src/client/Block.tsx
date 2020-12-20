@@ -3,7 +3,6 @@ import {findDOMNode} from 'react-dom';
 import cls from 'classnames';
 import {WithStyles, createStyles, withStyles} from '@material-ui/core';
 import TextareaAutosize from 'react-autosize-textarea';
-import {isEqual} from 'lodash';
 import {
 	DragSource,
 	DropTarget,
@@ -12,7 +11,6 @@ import {
 	DropTargetMonitor,
 	ConnectDragPreview
 } from 'react-dnd';
-import {XYCoord} from 'dnd-core';
 import hex2rgba from 'hex-to-rgba';
 import isMobile from '@/lib/is-mobile';
 
@@ -41,6 +39,14 @@ const styles = createStyles({
 		},
 		'&$dragging': {
 			cursor: 'grabbing'
+		},
+		'&:first-child': {
+			paddingTop: '2rem',
+			marginTop: '-1.7rem'
+		},
+		'&:last-child': {
+			paddingBottom: '2rem',
+			marginBottom: '-1.7rem'
 		}
 	},
 	outerContent: {
@@ -57,7 +63,7 @@ const styles = createStyles({
 		borderRadius: '0.4rem',
 		overflow: 'hidden',
 		'$focus &': {
-			boxShadow: '0 0 2rem 0 rgba(0,67,255,0.43)'
+			boxShadow: '0 0 0.4rem 0.3rem rgba(2, 91, 167, 0.43)'
 		},
 		'$root:not($focus):not($dragging) &:hover': {
 			opacity: 0.8
@@ -195,11 +201,6 @@ const cardTarget = {
 		const dragPos = monitor.getItem().position;
 		const hoverPos = props.position;
 
-		// Don't replace items with themselves
-		if (isEqual(dragPos, hoverPos)) {
-			return null;
-		}
-
 		// Determine rectangle on screen
 		const hoverBoundingRect = (findDOMNode(component) as Element).getBoundingClientRect();
 
@@ -207,10 +208,10 @@ const cardTarget = {
 		const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
 
 		// Determine mouse position
-		const clientOffset = monitor.getClientOffset();
+		const clientOffset = monitor.getClientOffset() ?? {x: 0, y: 0};
 
 		// Get pixels to the top
-		const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top;
+		const hoverClientY = clientOffset.y - hoverBoundingRect.top;
 
 		// Only perform the move when the mouse has crossed half of the items height
 		// When dragging downwards, only move when the cursor is below 50%
