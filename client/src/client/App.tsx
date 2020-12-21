@@ -257,7 +257,7 @@ const styles = createStyles({
 		flexDirection: 'column',
 		opacity: 0,
 		'$root:not($dragging) $blockList:hover &': {
-			opacity: 1
+			opacity: 0.5
 		},
 		'$dragging &': {
 			opacity: 0
@@ -688,6 +688,12 @@ class App extends React.Component<AppProps, State> {
 	public handleDragBlock = (dragPos: BlockPosition, hoverPos: BlockPosition) => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
+
+			if (hoverPos.column === timeline.data[hoverPos.row].columns.length) {
+				for (const rowData of timeline.data) {
+					rowData.columns.push([]);
+				}
+			}
 
 			const dragBlock = timeline.data[dragPos.row].columns[dragPos.column][dragPos.index];
 			timeline.data[dragPos.row].columns[dragPos.column].splice(dragPos.index, 1);

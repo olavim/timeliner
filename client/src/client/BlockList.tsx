@@ -18,6 +18,7 @@ const styles = createStyles({
 		boxSizing: 'border-box'
 	},
 	root: {
+		flex: 1,
 		width: '100%',
 		position: 'relative',
 		padding: '0.7rem 1rem',

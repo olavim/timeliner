@@ -23,24 +23,6 @@ const styles = createStyles({
 		margin: '0.3rem 0',
 		display: 'flex',
 		flexDirection: 'column',
-		cursor: 'pointer',
-		'& button': {
-			display: 'flex',
-			alignItems: 'center',
-			border: 'none',
-			backgroundColor: 'transparent',
-			fontSize: '1.1rem',
-			fontWeight: 500
-		},
-		'& button:not(:disabled)': {
-			cursor: 'pointer'
-		},
-		'& button:not(:disabled):hover': {
-			opacity: 0.6
-		},
-		'&$dragging': {
-			cursor: 'grabbing'
-		},
 		'&:first-child': {
 			paddingTop: '2rem',
 			marginTop: '-2.7rem'
@@ -63,6 +45,7 @@ const styles = createStyles({
 		boxShadow: '0 1px 0.1rem 0 rgba(0,0,0,0.2)',
 		borderRadius: '0.4rem',
 		overflow: 'hidden',
+		cursor: 'pointer',
 		'$focus &': {
 			boxShadow: '0 0 0.4rem 0.3rem rgba(2, 91, 167, 0.43)'
 		},
@@ -70,7 +53,8 @@ const styles = createStyles({
 			opacity: 0.8
 		},
 		'$dragging &': {
-			backgroundColor: 'rgba(0, 0, 0, 0.05)'
+			backgroundColor: 'rgba(0, 0, 0, 0.05)',
+			cursor: 'grabbing'
 		}
 	},
 	title: {
@@ -245,14 +229,13 @@ const cardTarget = {
 type Props = OwnProps & WithStyles<typeof styles> & BlockSourceCollectedProps & BlockTargetCollectedProps;
 
 interface State {
-	prepareClick: boolean;
 	wWidth: number;
 	wHeight: number;
 	showDeleteDialog: boolean;
 }
 
 class Block extends React.PureComponent<Props, State> {
-	public state: State = {prepareClick: false, wWidth: 0, wHeight: 0, showDeleteDialog: false};
+	public state: State = {wWidth: 0, wHeight: 0, showDeleteDialog: false};
 
 	public titleRef = React.createRef<any>();
 	public bodyRef = React.createRef<any>();
@@ -268,12 +251,6 @@ class Block extends React.PureComponent<Props, State> {
 
 	public updateDimensions = () => {
 		this.setState({wWidth: window.innerWidth, wHeight: window.innerHeight});
-	}
-
-	public componentDidUpdate(prevProps: Props) {
-		if (!prevProps.isDragging && this.props.isDragging) {
-			this.setState({prepareClick: false});
-		}
 	}
 
 	public focusBlock = () => {
@@ -299,16 +276,9 @@ class Block extends React.PureComponent<Props, State> {
 		evt.stopPropagation();
 	}
 
-	public handleMouseDown = () => {
-		this.setState({prepareClick: true});
-	}
-
 	public handleClick = (evt: React.MouseEvent) => {
 		evt.stopPropagation();
-
-		if (this.state.prepareClick) {
-			this.props.onClick(this.props.position);
-		}
+		this.props.onClick(this.props.position);
 	}
 
 	public getInputHandler = (prop: 'title' | 'body') => (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -327,7 +297,7 @@ class Block extends React.PureComponent<Props, State> {
 		} = this.props;
 
 		let contentElem = (
-			<div className={classes.content}>
+			<div className={classes.content} onClick={this.handleClick}>
 				{block.showTitle && (
 					<div
 						className={classes.title}
@@ -380,8 +350,6 @@ class Block extends React.PureComponent<Props, State> {
 				key={block.id}
 				className={cls(classes.root, {[classes.focus]: block.focused, [classes.dragging]: isDragging})}
 				style={{paddingLeft: `${block.indent * 4}rem`}}
-				onMouseDown={this.handleMouseDown}
-				onClick={this.handleClick}
 			>
 				<div className={classes.outerContent}>
 					{contentElem}
