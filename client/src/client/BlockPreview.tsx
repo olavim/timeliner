@@ -37,7 +37,8 @@ const styles = createStyles({
 		borderRadius: '0.4rem',
 		backgroundColor: '#fafafa',
 		cursor: 'grabbing',
-		pointerEvents: 'none'
+		pointerEvents: 'none',
+		zIndex: 100
 	},
 	title: {
 		minHeight: '1.5rem',
@@ -46,6 +47,7 @@ const styles = createStyles({
 		opacity: 0.8,
 		'& pre': {
 			padding: '0.6rem',
+			minHeight: '1.5rem',
 			whiteSpace: 'pre-wrap',
 			margin: 0,
 			fontWeight: 500,
@@ -60,6 +62,7 @@ const styles = createStyles({
 		opacity: 0.8,
 		'& pre': {
 			padding: '0.6rem',
+			minHeight: '1.5rem',
 			whiteSpace: 'pre-wrap',
 			margin: 0,
 			fontFamily: `'Roboto Mono', 'Courier New', Courier, monospace`,

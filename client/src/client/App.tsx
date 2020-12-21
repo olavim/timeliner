@@ -620,7 +620,7 @@ class App extends React.Component<AppProps, State> {
 		for (let r = 0; r < rows.length; r++) {
 			for (let c = 0; c < rows[r].columns.length; c++) {
 				for (let i = 0; i < rows[r].columns[c].length; i++) {
-					if (rows[r].columns[c][i].focused) {
+					if (rows[r].columns[c][i]?.focused) {
 						return {row: r, column: c, index: i};
 					}
 				}
@@ -685,7 +685,7 @@ class App extends React.Component<AppProps, State> {
 		});
 	}
 
-	public handleDragBlock = (dragPos: BlockPosition, hoverPos: BlockPosition) => {
+	public handleDragBlock = (dragBlock: BlockData, dragPos: BlockPosition, hoverPos: BlockPosition) => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
 
@@ -695,10 +695,11 @@ class App extends React.Component<AppProps, State> {
 				}
 			}
 
-			const dragBlock = timeline.data[dragPos.row].columns[dragPos.column][dragPos.index];
-			timeline.data[dragPos.row].columns[dragPos.column].splice(dragPos.index, 1);
-			timeline.data[hoverPos.row].columns[hoverPos.column].splice(hoverPos.index, 0, dragBlock);
+			if (timeline.data[dragPos.row].columns[dragPos.column][dragPos.index]) {
+				timeline.data[dragPos.row].columns[dragPos.column].splice(dragPos.index, 1);
+			}
 
+			timeline.data[hoverPos.row].columns[hoverPos.column].splice(hoverPos.index, 0, dragBlock);
 			return {timeline};
 		});
 	}

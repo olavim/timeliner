@@ -108,7 +108,8 @@ const styles = createStyles({
 		},
 		'pre&': {
 			margin: 0,
-			whiteSpace: 'pre-wrap'
+			whiteSpace: 'pre-wrap',
+			minHeight: '1.5rem'
 		},
 		'$focus pre&': {
 			display: 'none'
@@ -152,7 +153,7 @@ interface OwnProps {
 	fullScreen?: boolean;
 	block: BlockData;
 	position: BlockPosition;
-	onMoveBlock: (hoverPosition: BlockPosition, dragPosition: BlockPosition) => any;
+	onMoveBlock: (dragBlock: BlockData, dragPosition: BlockPosition, hoverPosition: BlockPosition) => any;
 	onChange: (position: BlockPosition, prop: keyof BlockData, value: any) => any;
 	onClick: (position: BlockPosition) => any;
 }
@@ -214,8 +215,16 @@ const cardTarget = {
 			}
 		}
 
+		let dragBlock: BlockData = monitor.getItem().block;
+
+		if (!dragBlock.id) {
+			dragBlock = {...dragBlock, id: new Date().getTime()};
+			monitor.getItem().id = dragBlock.id;
+			monitor.getItem().block = dragBlock;
+		}
+
 		// Time to actually perform the action
-		props.onMoveBlock(dragPos, hoverPos);
+		props.onMoveBlock(dragBlock, dragPos, hoverPos);
 
 		// Note: we're mutating the monitor item here!
 		// Generally it's better to avoid mutations,
