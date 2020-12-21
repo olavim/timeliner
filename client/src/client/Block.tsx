@@ -146,12 +146,12 @@ export interface BlockData {
 	showBody: boolean;
 	color: string;
 	indent: number;
-	focused: boolean;
 }
 
 interface OwnProps {
 	fullScreen?: boolean;
 	block: BlockData;
+	focused: boolean;
 	position: BlockPosition;
 	onMoveBlock: (dragBlock: BlockData, dragPosition: BlockPosition, hoverPosition: BlockPosition) => any;
 	onChange: (position: BlockPosition, prop: keyof BlockData, value: any) => any;
@@ -185,7 +185,7 @@ const cardTarget = {
 		}
 
 		const dragPos = monitor.getItem().position;
-		const hoverPos = props.position;
+		const hoverPos = {...props.position};
 
 		// Determine rectangle on screen
 		const hoverBoundingRect = (findDOMNode(component) as Element).getBoundingClientRect();
@@ -218,6 +218,8 @@ const cardTarget = {
 			if (dragPos.index > hoverPos.index && hoverClientY > hoverMiddleY) {
 				return null;
 			}
+		} else if (dragPos.row > hoverPos.row && props.block.id && hoverClientY > hoverMiddleY) {
+			hoverPos.index++;
 		}
 
 		let dragBlock: BlockData = monitor.getItem().block;
@@ -303,6 +305,7 @@ class Block extends React.PureComponent<Props, State> {
 	public render() {
 		const {
 			block,
+			focused,
 			classes,
 			connectDragSource,
 			connectDropTarget,
@@ -317,7 +320,7 @@ class Block extends React.PureComponent<Props, State> {
 						className={classes.title}
 						style={{backgroundColor: block.color}}
 					>
-						{block.focused && (
+						{focused && (
 							<TextareaAutosize
 								className={classes.textarea}
 								ref={this.titleRef}
@@ -337,7 +340,7 @@ class Block extends React.PureComponent<Props, State> {
 						className={classes.text}
 						style={{backgroundColor: hex2rgba(`${block.color}66`)}}
 					>
-						{block.focused && (
+						{focused && (
 							<TextareaAutosize
 								className={classes.textarea}
 								ref={this.bodyRef}
@@ -355,14 +358,14 @@ class Block extends React.PureComponent<Props, State> {
 			</div>
 		);
 
-		if (!block.focused && !isMobile.any()) {
+		if (!focused && !isMobile.any()) {
 			contentElem = connectDragSource(contentElem)!;
 		}
 
 		let elem = (
 			<div
 				key={block.id}
-				className={cls(classes.root, {[classes.focus]: block.focused, [classes.dragging]: isDragging})}
+				className={cls(classes.root, {[classes.focus]: focused, [classes.dragging]: isDragging})}
 				style={{paddingLeft: `${block.indent * 4}rem`}}
 			>
 				<div className={classes.outerContent}>
