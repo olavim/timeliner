@@ -203,7 +203,12 @@ const cardTarget = {
 		// When dragging downwards, only move when the cursor is below 50%
 		// When dragging upwards, only move when the cursor is above 50%
 
-		if (dragPos.row === hoverPos.row && hoverPos.column === hoverPos.column) {
+		if (dragPos.row === hoverPos.row && dragPos.column === hoverPos.column) {
+			// Hovering itself
+			if (dragPos.index === hoverPos.index) {
+				return null;
+			}
+
 			// Dragging downwards
 			if (dragPos.index < hoverPos.index && hoverClientY < hoverMiddleY) {
 				return null;

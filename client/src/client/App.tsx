@@ -132,9 +132,28 @@ const styles = createStyles({
 		justifyContent: 'flex-start',
 		alignItems: 'flex-start',
 		flex: '0 0 auto',
+		minWidth: 'min-content'
+	},
+	contentRowPreview: {
+		display: 'flex',
+		flexDirection: 'column',
+		justifyContent: 'flex-start',
+		alignItems: 'flex-start',
 		minWidth: 'min-content',
-		'&:last-child': {
-			flex: '1 1 auto'
+		flex: '1 1 auto',
+		'& $rowTitle': {
+			opacity: 0.5,
+			cursor: 'pointer',
+			display: 'none'
+		},
+		'&:hover $rowTitle': {
+			display: 'flex'
+		},
+		'&:hover $rowTitle:hover': {
+			opacity: 1
+		},
+		'&:not(:hover) $blockListWrapper': {
+			minHeight: '12rem'
 		}
 	},
 	rowTitle: {
@@ -245,6 +264,11 @@ const styles = createStyles({
 		'& svg': {
 			fontSize: '1.8rem'
 		}
+	},
+	blockListWrapper: {
+		flex: '0 0 auto',
+		display: 'flex',
+		height: 'calc(100% - 4.2rem)'
 	},
 	blockList: {
 		'&:first-child': {
@@ -726,6 +750,21 @@ class App extends React.Component<AppProps, State> {
 		});
 	}
 
+	public handleAddPreviewRow = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+
+			const columns = [];
+			for (let i = 0; i < timeline.data[0].columns.length; i++) {
+				columns.push([]);
+			}
+
+			timeline.data.push({title: '', columns});
+
+			return {timeline};
+		});
+	}
+
 	public handleAddBlockAbove = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
@@ -1026,46 +1065,57 @@ class App extends React.Component<AppProps, State> {
 					<div className={classes.content} ref={this.listContainerRef} onClick={this.handleDocumentClick}>
 						<div style={{flex: '0 0 1.3rem', backgroundColor: '#fafafa', width: '100%', position: 'sticky', top: 0, left: 0, zIndex: 1}}></div>
 						{timeline ? (
-							timeline.data.map((rowData, row) => (
-								<div key={row} className={classes.contentRow}>
-									<div className={classes.rowTitle}>
-										{rowData.title || `#${row + 1}`}
-									</div>
-									<div style={{flex: '0 0 auto', display: 'flex', height: 'calc(100% - 4.2rem'}}>
-										{rowData.columns.map((blocks, column) => (
-											<BlockList key={`${row}:${column}`} className={classes.blockList}>
-												{blocks.map((block, index) =>
-													this.getBlock(block, {row, column, index}, fullScreen)
-												)}
-												{blocks.length === 0 && (
-													<div className={classes.blockPreview}>
-														<Block
-															position={{row, column, index: 0}}
-															fullScreen={fullScreen}
-															onChange={this.handleChangeBlock}
-															onClick={this.handleAddPreviewBlock}
-															block={previewBlock}
-															onMoveBlock={this.handleDragBlock}
-														/>
-													</div>
-												)}
+							<>
+								{timeline.data.map((rowData, row) => (
+									<div key={row} className={classes.contentRow}>
+										<div className={classes.rowTitle}>
+											{rowData.title || `#${row + 1}`}
+										</div>
+										<div className={classes.blockListWrapper}>
+											{rowData.columns.map((blocks, column) => (
+												<BlockList key={`${row}:${column}`} className={classes.blockList}>
+													{blocks.map((block, index) =>
+														this.getBlock(block, {row, column, index}, fullScreen)
+													)}
+													{blocks.length === 0 && (
+														<div className={classes.blockPreview}>
+															<Block
+																position={{row, column, index: 0}}
+																fullScreen={fullScreen}
+																onChange={this.handleChangeBlock}
+																onClick={this.handleAddPreviewBlock}
+																block={previewBlock}
+																onMoveBlock={this.handleDragBlock}
+															/>
+														</div>
+													)}
+												</BlockList>
+											))}
+											<BlockList key={`${row}:${rowData.columns.length}`} className={classes.blockList}>
+												<div className={classes.blockPreview}>
+													<Block
+														position={{row, column: rowData.columns.length, index: 0}}
+														fullScreen={fullScreen}
+														onChange={this.handleChangeBlock}
+														onClick={this.handleAddPreviewBlock}
+														block={previewBlock}
+														onMoveBlock={this.handleDragBlock}
+													/>
+												</div>
 											</BlockList>
+										</div>
+									</div>
+								))}
+								<div className={classes.contentRowPreview}>
+									<div className={classes.rowTitle} onClick={this.handleAddPreviewRow}></div>
+									<div className={classes.blockListWrapper}>
+										{timeline.data[0].columns.map((_blocks, column) => (
+											<BlockList key={column} className={classes.blockList}/>
 										))}
-										<BlockList key={`${row}:${rowData.columns.length}`} className={classes.blockList}>
-											<div className={classes.blockPreview}>
-												<Block
-													position={{row, column: rowData.columns.length, index: 0}}
-													fullScreen={fullScreen}
-													onChange={this.handleChangeBlock}
-													onClick={this.handleAddPreviewBlock}
-													block={previewBlock}
-													onMoveBlock={this.handleDragBlock}
-												/>
-											</div>
-										</BlockList>
+										<BlockList className={classes.blockList}/>
 									</div>
 								</div>
-							))
+							</>
 						) : (
 							<div className={classes.noDocumentContainer}>
 								<Fab variant="extended" onClick={this.handleOpenNewDialog}>
