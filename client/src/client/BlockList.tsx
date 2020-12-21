@@ -8,25 +8,14 @@ const styles = createStyles({
 		minHeight: '8rem',
 		height: '100%',
 		maxWidth: '50rem',
-		width: 'calc(100% - 6rem)',
 		display: 'flex',
 		flexDirection: 'column',
 		transition: 'padding 0.2s, margin 0.2s',
-		'@media (min-width: 960px)': {
-			borderLeft: '1px dotted rgba(0,0,0,0.1)',
-			borderRight: '1px dotted rgba(0,0,0,0.1)',
-			width: '50rem',
-			minWidth: '50rem'
-		},
-		'&$focus': {
-			'@media (max-width: 960px)': {
-				paddingTop: '5rem'
-			},
-			'@media (max-height: 500px) and (orientation:landscape)': {
-				paddingTop: 'inherit',
-				width: 'calc(100% - 12rem)'
-			}
-		}
+		borderRight: '1px dotted rgba(0,0,0,0.1)',
+		flex: '0 0 50rem',
+		minWidth: '50rem',
+		padding: '1.2rem 0',
+		boxSizing: 'border-box'
 	},
 	root: {
 		width: '100%',

@@ -99,12 +99,9 @@ const styles = createStyles({
 	},
 	controlBar: {
 		display: 'flex',
-		backgroundColor: '#ffffff',
 		flex: '0 0 5rem',
-		padding: '0 2rem',
 		justifyContent: 'flex-start',
 		alignItems: 'center',
-		boxShadow: '0 0 0.6rem 0 rgba(0,0,0,0.4)',
 		'& button:disabled': {
 			opacity: 0.4
 		}
@@ -131,23 +128,33 @@ const styles = createStyles({
 	},
 	contentRow: {
 		display: 'flex',
-		flexDirection: 'row',
+		flexDirection: 'column',
 		justifyContent: 'flex-start',
 		alignItems: 'flex-start',
 		flex: '0 0 auto',
+		minWidth: 'min-content',
 		'&:last-child': {
 			flex: '1 1 auto'
 		}
 	},
 	rowTitle: {
-		flex: '0 0 2rem',
-		width: '100%',
-		backgroundColor: 'rgba(0,0,0,0.1)',
+		flex: '0 0 4rem',
+		width: 'calc(100vw - 25.5rem)',
+		backgroundColor: '#fff',
 		display: 'flex',
 		justifyContent: 'flex-start',
 		alignItems: 'center',
-		padding: '0.4rem 1rem',
-		fontWeight: 600
+		padding: '0.4rem 2rem',
+		fontWeight: 600,
+		boxSizing: 'border-box',
+		boxShadow: '0 0.1rem 0.1rem 0 rgba(0,0,0,0.1)',
+		position: 'sticky',
+		top: '1.3rem',
+		left: '0',
+		zIndex: 2,
+		'$contentRow:first-child &': {
+			marginTop: '1.3rem'
+		}
 	},
 	progressOverlay: {
 		width: '100%',
@@ -201,7 +208,6 @@ const styles = createStyles({
 		overflowY: 'visible',
 		boxShadow: 'none',
 		'& button': {
-			backgroundColor: '#5e8fc5',
 			fontSize: '1.2rem',
 			color: '#fff',
 			fontWeight: 600,
@@ -240,7 +246,11 @@ const styles = createStyles({
 			fontSize: '1.8rem'
 		}
 	},
-	blockList: {},
+	blockList: {
+		'&:first-child': {
+			marginLeft: '1.4rem'
+		}
+	},
 	blockPreview: {
 		display: 'flex',
 		width: '100%',
@@ -289,7 +299,6 @@ interface State {
 	showNewDialog: boolean;
 	showConfirmDialog: boolean;
 	downloadData: {blob: Blob; filename: string} | null;
-	appBarActions: any[];
 }
 
 interface CollectProps {
@@ -326,8 +335,7 @@ class App extends React.Component<AppProps, State> {
 		showRenameDialog: false,
 		showNewDialog: false,
 		showConfirmDialog: false,
-		downloadData: null,
-		appBarActions: []
+		downloadData: null
 	};
 
 	constructor(props: AppProps) {
@@ -692,6 +700,13 @@ class App extends React.Component<AppProps, State> {
 	public handleAddPreviewBlock = ({row, column}: BlockPosition) => {
 		this.setState(state => {
 			const timeline = this.unfocusBlocks(cloneDeep(state.timeline))!;
+
+			if (timeline.data[row].columns.length === column) {
+				for (const rowData of timeline.data) {
+					rowData.columns.push([]);
+				}
+			}
+
 			timeline.data[row].columns[column].push({
 				...previewBlock,
 				id: new Date().getTime(),
@@ -819,7 +834,12 @@ class App extends React.Component<AppProps, State> {
 			const timeline = cloneDeep(state.timeline)!;
 			const pos = this.getFocusedBlock(timeline)!;
 
-			timeline.data.splice(pos.row, 0, {title: '', columns: [[]]});
+			const columns = [];
+			for (let i = 0; i < timeline.data[0].columns.length; i++) {
+				columns.push([]);
+			}
+
+			timeline.data.splice(pos.row, 0, {title: '', columns});
 			return {timeline};
 		});
 	};
@@ -829,7 +849,12 @@ class App extends React.Component<AppProps, State> {
 			const timeline = cloneDeep(state.timeline)!;
 			const pos = this.getFocusedBlock(timeline)!;
 
-			timeline.data.splice(pos.row + 1, 0, {title: '', columns: [[]]});
+			const columns = [];
+			for (let i = 0; i < timeline.data[0].columns.length; i++) {
+				columns.push([]);
+			}
+
+			timeline.data.splice(pos.row + 1, 0, {title: '', columns});
 			return {timeline};
 		});
 	};
@@ -873,7 +898,6 @@ class App extends React.Component<AppProps, State> {
 			showNewDialog,
 			nameStr,
 			downloadData,
-			appBarActions
 		} = this.state;
 
 		const focusedBlockPos = this.getFocusedBlock();
@@ -956,17 +980,16 @@ class App extends React.Component<AppProps, State> {
 								<FileTreeIcon/>
 							</IconButton>
 						)}
-						<div className={classes.blockActionContainer}>
-							{appBarActions.map((a: any) => (
-								a.icon ? (
-									<IconButton key={a.label} onClick={a.fn} disabled={a.disabled} className={classes.blockAction}>
-										<a.icon/>
-									</IconButton>
-								) : (
-									<button key={a.label} onClick={a.fn} disabled={a.disabled} className={classes.blockAction}>
-										{a.label}
-									</button>
-								)
+						<div className={classes.controlBar}>
+							{actions.map((obj, idx) => (
+								<IconButton
+									key={idx}
+									style={{padding: '0.75rem'}}
+									disabled={!focusedBlockPos || !obj.onClick}
+									onClick={obj.onClick}
+								>
+									<img src={obj.icon} style={{width: '24px'}}/>
+								</IconButton>
 							))}
 						</div>
 						{auth.isAuthenticated ? (
@@ -993,26 +1016,15 @@ class App extends React.Component<AppProps, State> {
 							<img src={githubIcon} style={{height: '2.4rem'}}/>
 						</IconButton>
 					</div>
-					<div className={classes.controlBar}>
-						{actions.map((obj, idx) => (
-							<IconButton
-								key={idx}
-								style={{padding: '0.75rem'}}
-								disabled={!focusedBlockPos || !obj.onClick}
-								onClick={obj.onClick}
-							>
-								<img src={obj.icon} style={{width: '24px'}}/>
-							</IconButton>
-						))}
-					</div>
 					<div className={classes.content} ref={this.listContainerRef} onClick={this.handleDocumentClick}>
+						<div style={{flex: '0 0 1.3rem', backgroundColor: '#fafafa', width: '100%', position: 'sticky', top: 0, left: 0, zIndex: 1}}></div>
 						{timeline ? (
 							timeline.data.map((rowData, row) => (
-								<React.Fragment key={row}>
+								<div key={row} className={classes.contentRow}>
 									<div className={classes.rowTitle}>
 										{rowData.title || `#${row + 1}`}
 									</div>
-									<div className={classes.contentRow}>
+									<div style={{flex: '0 0 auto', display: 'flex', height: 'calc(100% - 4.2rem'}}>
 										{rowData.columns.map((blocks, column) => (
 											<BlockList key={`${row}:${column}`} className={classes.blockList}>
 												{blocks.map((block, index) =>
@@ -1032,8 +1044,20 @@ class App extends React.Component<AppProps, State> {
 												)}
 											</BlockList>
 										))}
+										<BlockList key={`${row}:${rowData.columns.length}`} className={classes.blockList}>
+											<div className={classes.blockPreview}>
+												<Block
+													position={{row, column: rowData.columns.length, index: 0}}
+													fullScreen={fullScreen}
+													onChange={this.handleChangeBlock}
+													onClick={this.handleAddPreviewBlock}
+													block={previewBlock}
+													onMoveBlock={this.handleDragBlock}
+												/>
+											</div>
+										</BlockList>
 									</div>
-								</React.Fragment>
+								</div>
 							))
 						) : (
 							<div className={classes.noDocumentContainer}>

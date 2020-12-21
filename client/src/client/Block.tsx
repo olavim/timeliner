@@ -43,11 +43,11 @@ const styles = createStyles({
 		},
 		'&:first-child': {
 			paddingTop: '2rem',
-			marginTop: '-1.7rem'
+			marginTop: '-2.7rem'
 		},
 		'&:last-child': {
 			paddingBottom: '2rem',
-			marginBottom: '-1.7rem'
+			marginBottom: '-2.7rem'
 		}
 	},
 	outerContent: {
@@ -169,7 +169,7 @@ interface OwnProps {
 	block: BlockData;
 	position: BlockPosition;
 	onMoveBlock: (hoverPosition: BlockPosition, dragPosition: BlockPosition) => any;
-	onChange: (id: any, prop: keyof BlockData, value: any) => any;
+	onChange: (position: BlockPosition, prop: keyof BlockData, value: any) => any;
 	onClick: (position: BlockPosition) => any;
 }
 
@@ -312,8 +312,8 @@ class Block extends React.PureComponent<Props, State> {
 	}
 
 	public getInputHandler = (prop: 'title' | 'body') => (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
-		const {onChange, block} = this.props;
-		onChange(block.id, prop, evt.target.value);
+		const {onChange, position} = this.props;
+		onChange(position, prop, evt.target.value);
 	}
 
 	public render() {
