@@ -57,6 +57,7 @@ import RemoveRowIcon from './images/remove-row.svg';
 import Block, {BlockPosition, BlockData} from './Block';
 import {DragLayer} from 'react-dnd';
 import TextareaAutosize from 'react-autosize-textarea/lib';
+import {ColorState, SketchPicker} from 'react-color';
 
 const memoize = (_memoize as any).default;
 
@@ -320,6 +321,57 @@ const styles = createStyles({
 		'$dragging &': {
 			opacity: 0
 		}
+	},
+	colorChooser: {
+		position: 'absolute',
+		top: '0',
+		left: '0',
+		width: '100%',
+		height: '100%',
+		justifyContent: 'center',
+		alignItems: 'center',
+		zIndex: 2000
+	},
+	colorChooserComponent: {
+		zIndex: 5,
+		'& > div:first-child': {
+			userSelect: 'none'
+		}
+	},
+	colorChooserContent: {
+		display: 'flex',
+		flexDirection: 'row',
+		maxWidth: '60rem',
+		width: '60rem',
+		padding: '2rem',
+		borderRadius: '0.5rem',
+		overflow: 'hidden',
+		boxShadow: '0 0 20rem 0 #000000',
+		position: 'relative',
+		'@media (max-width: 760px)': {
+			width: 'auto',
+			height: '32rem',
+			flexDirection: 'column-reverse'
+		}
+	},
+	colorPreview: {
+		display: 'flex',
+		flexDirection: 'column',
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		width: '100%',
+		height: '100%',
+		backgroundColor: '#fafafa',
+		borderRadius: '1rem',
+		'& > div:first-child': {
+			flex: 0.5,
+			width: '100%'
+		},
+		'& > div:last-child': {
+			flex: '1 1 auto',
+			width: '100%'
+		}
 	}
 });
 
@@ -356,8 +408,9 @@ interface State {
 	showRenameDialog: boolean;
 	showNewDialog: boolean;
 	showConfirmDialog: boolean;
+	showColorPicker: boolean;
 	downloadData: {blob: Blob; filename: string} | null;
-	focusedBlock: BlockPosition | null;
+	focusedBlockPosition: BlockPosition | null;
 	focusedRow: number;
 }
 
@@ -394,8 +447,9 @@ class App extends React.Component<AppProps, State> {
 		showRenameDialog: false,
 		showNewDialog: false,
 		showConfirmDialog: false,
+		showColorPicker: false,
 		downloadData: null,
-		focusedBlock: null,
+		focusedBlockPosition: null,
 		focusedRow: -1
 	};
 
@@ -458,7 +512,7 @@ class App extends React.Component<AppProps, State> {
 	}
 
 	public handleDocumentClick = (_evt: any) => {
-		this.setState({focusedBlock: null, focusedRow: -1});
+		this.setState({focusedBlockPosition: null, focusedRow: -1});
 	}
 
 	public componentDidUpdate(_prevProps: any, prevState: State) {
@@ -658,6 +712,20 @@ class App extends React.Component<AppProps, State> {
 		this.props.auth.logout({returnTo: window.location.origin});
 	}
 
+	public getPresetColors = () => {
+		const set = new Set<string>();
+
+		for (const rowData of this.state.timeline?.data || []) {
+			for (const blocks of rowData.columns) {
+				for (const block of blocks) {
+					set.add(block.color);
+				}
+			}
+		}
+
+		return Array.from(set);
+	}
+
 	public getNewColumnHandler = (index: number) => () => {
 		this.setState(state => {
 			const newData = state.timeline!.data.map(row => {
@@ -683,6 +751,16 @@ class App extends React.Component<AppProps, State> {
 		this.setState({timeline});
 	}
 
+	public handleOpenColorPicker = (evt: React.MouseEvent) => {
+		evt.stopPropagation();
+		this.setState({showColorPicker: true});
+	}
+
+	public handleCloseColorPicker = (evt: React.MouseEvent) => {
+		evt.stopPropagation();
+		this.setState({showColorPicker: false});
+	}
+
 	public handleChangeBlock = (pos: BlockPosition, prop: keyof BlockData, value: any) => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
@@ -692,12 +770,12 @@ class App extends React.Component<AppProps, State> {
 	}
 
 	public handleClickBlock = (pos: BlockPosition) => {
-		this.setState({focusedRow: -1, focusedBlock: pos});
+		this.setState({focusedRow: -1, focusedBlockPosition: pos});
 	}
 
 	public getRowClickHandler = (row: number) => (evt: React.MouseEvent) => {
 		evt.stopPropagation();
-		this.setState({focusedRow: row, focusedBlock: null});
+		this.setState({focusedRow: row, focusedBlockPosition: null});
 	}
 
 	public getRowChangeHandler = (row: number) => (evt: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -747,7 +825,7 @@ class App extends React.Component<AppProps, State> {
 				body: ''
 			});
 
-			return {timeline, focusedBlock: pos};
+			return {timeline, focusedBlockPosition: pos};
 		});
 	}
 
@@ -764,14 +842,14 @@ class App extends React.Component<AppProps, State> {
 
 			timeline.data.push({title: '', columns});
 
-			return {timeline, focusedBlock: null, focusedRow: timeline.data.length - 1};
+			return {timeline, focusedBlockPosition: null, focusedRow: timeline.data.length - 1};
 		});
 	}
 
 	public handleAddBlockAbove = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 
 			timeline.data[pos.row].columns[pos.column].splice(pos.index, 0, {
 				...timeline.data[pos.row].columns[pos.column][pos.index],
@@ -780,14 +858,14 @@ class App extends React.Component<AppProps, State> {
 				title: ''
 			});
 
-			return {timeline, focusedBlock: {...pos, index: pos.index - 1}};
+			return {timeline, focusedBlockPosition: {...pos, index: pos.index - 1}};
 		});
 	};
 
 	public handleAddBlockBelow = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 
 			timeline.data[pos.row].columns[pos.column].splice(pos.index + 1, 0, {
 				...timeline.data[pos.row].columns[pos.column][pos.index],
@@ -796,14 +874,14 @@ class App extends React.Component<AppProps, State> {
 				title: ''
 			});
 
-			return {timeline, focusedBlock: {...pos, index: pos.index + 1}};
+			return {timeline, focusedBlockPosition: {...pos, index: pos.index + 1}};
 		});
 	};
 
 	public handleMoveBlockUp = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 			const newPos = {...pos};
 
 			const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
@@ -824,7 +902,7 @@ class App extends React.Component<AppProps, State> {
 	public handleMoveBlockDown = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 			const newPos = {...pos};
 
 			const focusedBlock = timeline.data[pos.row].columns[pos.column][pos.index];
@@ -845,7 +923,7 @@ class App extends React.Component<AppProps, State> {
 	public handleRemoveBlock = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 
 			timeline.data[pos.row].columns[pos.column].splice(pos.index, 1);
 			return {timeline};
@@ -855,7 +933,7 @@ class App extends React.Component<AppProps, State> {
 	public handleIndentBlock = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 
 			const indentation = timeline.data[pos.row].columns[pos.column][pos.index].indent;
 			timeline.data[pos.row].columns[pos.column][pos.index].indent = Math.min(10, indentation + 1);
@@ -867,7 +945,7 @@ class App extends React.Component<AppProps, State> {
 	public handleOutdentBlock = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 
 			const indentation = timeline.data[pos.row].columns[pos.column][pos.index].indent;
 			timeline.data[pos.row].columns[pos.column][pos.index].indent = Math.max(0, indentation - 1);
@@ -879,7 +957,7 @@ class App extends React.Component<AppProps, State> {
 	public handleAddRowAbove = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 
 			const columns = [];
 			for (let i = 0; i < timeline.data[0].columns.length; i++) {
@@ -887,14 +965,14 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			timeline.data.splice(pos.row, 0, {title: '', columns});
-			return {timeline, focusedBlock: null, focusedRow: pos.row};
+			return {timeline, focusedBlockPosition: null, focusedRow: pos.row};
 		});
 	};
 
 	public handleAddRowBelow = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 
 			const columns = [];
 			for (let i = 0; i < timeline.data[0].columns.length; i++) {
@@ -902,14 +980,14 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			timeline.data.splice(pos.row + 1, 0, {title: '', columns});
-			return {timeline, focusedBlock: null, focusedRow: pos.row + 1};
+			return {timeline, focusedBlockPosition: null, focusedRow: pos.row + 1};
 		});
 	};
 
 	public handleAddColumnLeft = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 
 			for (const rowData of timeline.data) {
 				rowData.columns.splice(pos.column, 0, []);
@@ -922,7 +1000,7 @@ class App extends React.Component<AppProps, State> {
 	public handleAddColumnRight = () => {
 		this.setState(state => {
 			const timeline = cloneDeep(state.timeline)!;
-			const pos = state.focusedBlock!;
+			const pos = state.focusedBlockPosition!;
 
 			for (const rowData of timeline.data) {
 				rowData.columns.splice(pos.column + 1, 0, []);
@@ -932,12 +1010,23 @@ class App extends React.Component<AppProps, State> {
 		});
 	};
 
+	public handleChangeBlockColor = (colorState: ColorState) => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = state.focusedBlockPosition!;
+
+			timeline.data[pos.row].columns[pos.column][pos.index].color = colorState.hex;
+			return {timeline};
+		});
+	}
+
 	public render() {
 		const {classes, fullScreen, auth, isDragging} = this.props;
 		const {
 			timeline,
 			showDrawer,
 			showFileTree,
+			showColorPicker,
 			fontsLoaded,
 			loading,
 			exporting,
@@ -945,8 +1034,8 @@ class App extends React.Component<AppProps, State> {
 			showNewDialog,
 			nameStr,
 			downloadData,
-			focusedBlock,
-			focusedRow
+			focusedBlockPosition: focusedBlockPos,
+			focusedRow,
 		} = this.state;
 
 		if (!fontsLoaded || loading || auth.loading) {
@@ -969,7 +1058,7 @@ class App extends React.Component<AppProps, State> {
 			{icon: RemoveTitleIcon},
 			{icon: AddBodyIcon},
 			{icon: RemoveBodyIcon},
-			{icon: ColorChooserIcon},
+			{icon: ColorChooserIcon, onClick: this.handleOpenColorPicker},
 			{icon: MoveColumnRightIcon},
 			{icon: MoveColumnLeftIcon},
 			{icon: MoveRowUpIcon},
@@ -981,6 +1070,10 @@ class App extends React.Component<AppProps, State> {
 			{icon: RemoveColumnIcon},
 			{icon: RemoveRowIcon},
 		];
+
+		const focusedBlock =
+			focusedBlockPos &&
+			timeline?.data[focusedBlockPos.row].columns[focusedBlockPos.column][focusedBlockPos.index];
 
 		return (
 			<div className={cls(classes.root, {[classes.dragging]: isDragging})}>
@@ -1032,7 +1125,7 @@ class App extends React.Component<AppProps, State> {
 								<IconButton
 									key={idx}
 									style={{padding: '0.75rem'}}
-									disabled={!focusedBlock || !obj.onClick}
+									disabled={!focusedBlockPos || !obj.onClick}
 									onClick={obj.onClick}
 								>
 									<img src={obj.icon} style={{width: '24px'}}/>
@@ -1092,7 +1185,7 @@ class App extends React.Component<AppProps, State> {
 												<BlockList key={`${row}:${column}`} className={classes.blockList}>
 													{blocks.map((block, index) => {
 														const pos = {row, column, index};
-														return this.getBlock(block, pos, isEqual(pos, focusedBlock), fullScreen);
+														return this.getBlock(block, pos, isEqual(pos, focusedBlockPos), fullScreen);
 													})}
 													{blocks.length === 0 && (
 														<div className={classes.blockPreview}>
@@ -1147,6 +1240,27 @@ class App extends React.Component<AppProps, State> {
 						)}
 					</div>
 				</div>
+				{focusedBlock && (
+					<div
+						className={classes.colorChooser}
+						style={{display: showColorPicker ? 'flex' : 'none'}}
+						onClick={this.handleCloseColorPicker}
+					>
+						<div className={classes.colorChooserContent} onClick={this.handleOpenColorPicker}>
+							<SketchPicker
+								disableAlpha
+								color={focusedBlock.color}
+								onChange={this.handleChangeBlockColor}
+								presetColors={this.getPresetColors()}
+								className={classes.colorChooserComponent}
+							/>
+							<div className={classes.colorPreview}>
+								<div style={{backgroundColor: focusedBlock.color}} />
+								<div style={{backgroundColor: `${focusedBlock.color}66`}} />
+							</div>
+						</div>
+					</div>
+				)}
 				<Dialog
 					fullScreen={fullScreen}
 					open={showNewDialog}

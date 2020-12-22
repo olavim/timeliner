@@ -42,12 +42,12 @@ const styles = createStyles({
 		flex: '1 1 auto',
 		display: 'flex',
 		flexDirection: 'column',
-		boxShadow: '0 1px 0.1rem 0 rgba(0,0,0,0.2)',
+		boxShadow: '0 0.1rem 0.1rem 0 rgba(0,0,0,0.2)',
 		borderRadius: '0.4rem',
 		overflow: 'hidden',
 		cursor: 'pointer',
 		'$focus &': {
-			boxShadow: '0 0 0.4rem 0.3rem rgba(2, 91, 167, 0.43)'
+			boxShadow: '0 0 0.2rem 0.1rem rgba(0, 74, 138, 0.59)'
 		},
 		'$root:not($focus):not($dragging) &:hover': {
 			opacity: 0.8
