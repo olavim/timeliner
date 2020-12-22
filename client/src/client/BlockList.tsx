@@ -11,7 +11,6 @@ const styles = createStyles({
 		display: 'flex',
 		flexDirection: 'column',
 		transition: 'padding 0.2s, margin 0.2s',
-		borderRight: '1px dotted rgba(0,0,0,0.1)',
 		flex: '0 0 50rem',
 		minWidth: '50rem',
 		padding: '1.2rem 0',

@@ -309,9 +309,13 @@ const styles = createStyles({
 		height: 'calc(100% - 4.2rem)'
 	},
 	blockList: {
+		borderRight: '1px dotted rgba(0,0,0,0.1)',
 		'&:first-child': {
 			marginLeft: '1.4rem'
 		}
+	},
+	blockListPreview: {
+		borderRight: 'none'
 	},
 	blockPreview: {
 		display: 'flex',
@@ -471,7 +475,7 @@ class App extends React.Component<AppProps, State> {
 	public getBlock = memoize(
 		(block: BlockData, pos: BlockPosition, focused: boolean, fullScreen?: boolean) => (
 			<Block
-				key={`${block.id}:${String(focused)}`}
+				key={`${block.id}:${String(focused)}:${pos.row}:${pos.column}:${pos.index}`}
 				block={block}
 				position={pos}
 				fullScreen={fullScreen}
@@ -807,6 +811,21 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			timeline.data[hoverPos.row].columns[hoverPos.column].splice(hoverPos.index, 0, dragBlock);
+
+			while (true) {
+				const isLastColumnEmpty = timeline.data.every(
+					rowData => rowData.columns[rowData.columns.length - 1].length === 0
+				);
+
+				if (!isLastColumnEmpty) {
+					break;
+				}
+
+				for (const rowData of timeline.data) {
+					rowData.columns.splice(rowData.columns.length - 1, 1);
+				}
+			}
+
 			return {timeline};
 		});
 	}
@@ -1341,7 +1360,10 @@ class App extends React.Component<AppProps, State> {
 													)}
 												</BlockList>
 											))}
-											<BlockList key={`${row}:${rowData.columns.length}`} className={classes.blockList}>
+											<BlockList
+												key={`${row}:${rowData.columns.length}`}
+												className={cls(classes.blockList, classes.blockListPreview)}
+											>
 												<div className={classes.blockPreview}>
 													<Block
 														position={{row, column: rowData.columns.length, index: 0}}
@@ -1364,7 +1386,6 @@ class App extends React.Component<AppProps, State> {
 											{timeline.data[0]?.columns.map((_blocks, column) => (
 												<BlockList key={column} className={classes.blockList}/>
 											))}
-											<BlockList className={classes.blockList}/>
 										</div>
 									</div>
 								)}

@@ -180,7 +180,7 @@ const cardTarget = {
 			return null;
 		}
 
-		const dragPos = monitor.getItem().position;
+		const dragPos = {...monitor.getItem().position};
 		const hoverPos = {...props.position};
 
 		// Determine rectangle on screen
@@ -218,12 +218,11 @@ const cardTarget = {
 			hoverPos.index++;
 		}
 
-		let dragBlock: BlockData = monitor.getItem().block;
+		const dragBlock: BlockData = {...monitor.getItem().block};
 
 		if (!dragBlock.id) {
-			dragBlock = {...dragBlock, id: new Date().getTime()};
+			dragBlock.id = new Date().getTime();
 			monitor.getItem().id = dragBlock.id;
-			monitor.getItem().block = dragBlock;
 		}
 
 		// Time to actually perform the action
@@ -234,6 +233,7 @@ const cardTarget = {
 		// but it's good here for the sake of performance
 		// to avoid expensive index searches.
 		monitor.getItem().position = hoverPos;
+		monitor.getItem().block = dragBlock;
 		return null;
 	}
 };
