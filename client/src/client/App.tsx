@@ -836,7 +836,7 @@ class App extends React.Component<AppProps, State> {
 			const timeline = cloneDeep(state.timeline)!;
 
 			const columns = [];
-			for (let i = 0; i < timeline.data[0].columns.length; i++) {
+			for (let i = 0; i < timeline.data[0]?.columns.length ?? 0; i++) {
 				columns.push([]);
 			}
 
@@ -960,7 +960,7 @@ class App extends React.Component<AppProps, State> {
 			const pos = state.focusedBlockPosition!;
 
 			const columns = [];
-			for (let i = 0; i < timeline.data[0].columns.length; i++) {
+			for (let i = 0; i < timeline.data[0]?.columns.length ?? 0; i++) {
 				columns.push([]);
 			}
 
@@ -975,7 +975,7 @@ class App extends React.Component<AppProps, State> {
 			const pos = state.focusedBlockPosition!;
 
 			const columns = [];
-			for (let i = 0; i < timeline.data[0].columns.length; i++) {
+			for (let i = 0; i < timeline.data[0]?.columns.length ?? 0; i++) {
 				columns.push([]);
 			}
 
@@ -1086,15 +1086,73 @@ class App extends React.Component<AppProps, State> {
 
 			if (pos.column < timeline.data[pos.row].columns.length - 1) {
 				for (const rowData of timeline.data) {
-					const col = rowData.columns[pos.column];
+					const columnData = rowData.columns[pos.column];
 					rowData.columns.splice(pos.column, 1);
-					rowData.columns.splice(pos.column + 1, 0, col);
+					rowData.columns.splice(pos.column + 1, 0, columnData);
 				}
 
 				pos.column++;
 			}
 
 			return {timeline, focusedBlockPosition: pos};
+		});
+	}
+
+	public handleMoveRowUp = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = {...state.focusedBlockPosition!};
+
+			if (pos.row > 0) {
+				const rowData = timeline.data[pos.row];
+				timeline.data.splice(pos.row, 1);
+				timeline.data.splice(pos.row - 1, 0, rowData);
+
+				pos.row--;
+			}
+
+			return {timeline, focusedBlockPosition: pos};
+		});
+	}
+
+	public handleMoveRowDown = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = {...state.focusedBlockPosition!};
+
+			if (pos.row < timeline.data.length - 1) {
+				const rowData = timeline.data[pos.row];
+				timeline.data.splice(pos.row, 1);
+				timeline.data.splice(pos.row + 1, 0, rowData);
+
+				pos.row++;
+			}
+
+			return {timeline, focusedBlockPosition: pos};
+		});
+	}
+
+	public handleDeleteColumn = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = {...state.focusedBlockPosition!};
+
+			for (const rowData of timeline.data) {
+				rowData.columns.splice(pos.column, 1);
+			}
+
+			return {timeline, focusedBlockPosition: null};
+		});
+	}
+
+	public handleDeleteRow = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = {...state.focusedBlockPosition!};
+
+			timeline.data.splice(pos.row, 1);
+
+			return {timeline, focusedBlockPosition: null};
 		});
 	}
 
@@ -1143,14 +1201,14 @@ class App extends React.Component<AppProps, State> {
 			{icon: ColorChooserIcon, onClick: this.handleOpenColorPicker},
 			{icon: MoveColumnLeftIcon, onClick: this.handleMoveColumnLeft},
 			{icon: MoveColumnRightIcon, onClick: this.handleMoveColumnRight},
-			{icon: MoveRowUpIcon},
-			{icon: MoveRowDownIcon},
+			{icon: MoveRowUpIcon, onClick: this.handleMoveRowUp},
+			{icon: MoveRowDownIcon, onClick: this.handleMoveRowDown},
 			{icon: AddColumnLeftIcon, onClick: this.handleAddColumnLeft},
 			{icon: AddColumnRightIcon, onClick: this.handleAddColumnRight},
 			{icon: AddRowAboveIcon, onClick: this.handleAddRowAbove},
 			{icon: AddRowBelowIcon, onClick: this.handleAddRowBelow},
-			{icon: RemoveColumnIcon},
-			{icon: RemoveRowIcon},
+			{icon: RemoveColumnIcon, onClick: this.handleDeleteColumn},
+			{icon: RemoveRowIcon, onClick: this.handleDeleteRow}
 		];
 
 		return (
@@ -1300,7 +1358,7 @@ class App extends React.Component<AppProps, State> {
 									<div className={classes.contentRowPreview}>
 										<div className={classes.rowTitle} onClick={this.handleAddPreviewRow}></div>
 										<div className={classes.blockListWrapper}>
-											{timeline.data[0].columns.map((_blocks, column) => (
+											{timeline.data[0]?.columns.map((_blocks, column) => (
 												<BlockList key={column} className={classes.blockList}/>
 											))}
 											<BlockList className={classes.blockList}/>
