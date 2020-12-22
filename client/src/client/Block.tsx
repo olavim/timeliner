@@ -2,6 +2,7 @@ import * as React from 'react';
 import {findDOMNode} from 'react-dom';
 import cls from 'classnames';
 import {WithStyles, createStyles, withStyles} from '@material-ui/core';
+import {darken} from '@material-ui/core/styles/colorManipulator';
 import TextareaAutosize from 'react-autosize-textarea';
 import {
 	DragSource,
@@ -42,13 +43,9 @@ const styles = createStyles({
 		flex: '1 1 auto',
 		display: 'flex',
 		flexDirection: 'column',
-		boxShadow: '0 0.1rem 0.1rem 0 rgba(0,0,0,0.2)',
 		borderRadius: '0.4rem',
 		overflow: 'hidden',
 		cursor: 'pointer',
-		'$focus &': {
-			boxShadow: '0 0 0.2rem 0.1rem rgba(0, 74, 138, 0.59)'
-		},
 		'$root:not($focus):not($dragging) &:hover': {
 			opacity: 0.8
 		},
@@ -313,7 +310,15 @@ class Block extends React.PureComponent<Props, State> {
 		} = this.props;
 
 		let contentElem = (
-			<div className={classes.content} onClick={this.handleClick}>
+			<div
+				className={classes.content}
+				onClick={this.handleClick}
+				style={{
+					boxShadow: focused
+						? `0 0 0.2rem 0.1rem ${darken(block.color, 0.3)}`
+						: '0 0.1rem 0.1rem 0 rgba(0,0,0,0.2)'
+				}}
+			>
 				{block.showTitle && (
 					<div
 						className={classes.title}

@@ -176,11 +176,14 @@ const styles = createStyles({
 		top: '1.3rem',
 		left: '0',
 		zIndex: 2,
+		'&:hover': {
+			boxShadow: '0 0.1rem 0.1rem 0 rgba(0,0,0,0.2)'
+		},
 		'$contentRow:first-child &': {
 			marginTop: '1.3rem'
 		},
 		'$contentRow$focus &': {
-			boxShadow: '0 0.1rem 0.1rem 0 rgba(0,0,0,0.2)'
+			boxShadow: '0 0.1rem 0.2rem 0 rgba(0,0,0,0.4)'
 		},
 		'$contentRow:not($focus) &': {
 			cursor: 'pointer'
