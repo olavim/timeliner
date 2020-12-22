@@ -60,7 +60,6 @@ const styles = createStyles({
 	title: {
 		display: 'flex',
 		textAlign: 'left',
-		paddingRight: '2rem',
 		'& pre': {
 			fontFamily: `'Roboto Mono', 'Courier New', Courier, monospace`,
 			fontSize: '11px',
@@ -78,7 +77,6 @@ const styles = createStyles({
 	text: {
 		display: 'flex',
 		textAlign: 'left',
-		paddingRight: '2rem',
 		'$focus &': {
 			cursor: 'text'
 		},
@@ -109,6 +107,7 @@ const styles = createStyles({
 		'pre&': {
 			margin: 0,
 			whiteSpace: 'pre-wrap',
+			wordBreak: 'break-word',
 			minHeight: '1.5rem'
 		},
 		'$focus pre&': {
@@ -331,7 +330,7 @@ class Block extends React.PureComponent<Props, State> {
 							/>
 						)}
 						<pre className={classes.textarea}>
-							{block.title}
+							{block.title + ' '}
 						</pre>
 					</div>
 				)}
@@ -351,7 +350,7 @@ class Block extends React.PureComponent<Props, State> {
 							/>
 						)}
 						<pre className={classes.textarea}>
-							{block.body}
+							{block.body + ' '}
 						</pre>
 					</div>
 				)}

@@ -1020,6 +1020,84 @@ class App extends React.Component<AppProps, State> {
 		});
 	}
 
+	public handleShowBlockTitle = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = state.focusedBlockPosition!;
+
+			timeline.data[pos.row].columns[pos.column][pos.index].showTitle = true;
+			return {timeline};
+		});
+	}
+
+	public handleShowBlockBody = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = state.focusedBlockPosition!;
+
+			timeline.data[pos.row].columns[pos.column][pos.index].showBody = true;
+			return {timeline};
+		});
+	}
+
+	public handleHideBlockTitle = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = state.focusedBlockPosition!;
+
+			timeline.data[pos.row].columns[pos.column][pos.index].showTitle = false;
+			return {timeline};
+		});
+	}
+
+	public handleHideBlockBody = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = state.focusedBlockPosition!;
+
+			timeline.data[pos.row].columns[pos.column][pos.index].showBody = false;
+			return {timeline};
+		});
+	}
+
+	public handleMoveColumnLeft = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = {...state.focusedBlockPosition!};
+
+			if (pos.column > 0) {
+				for (const rowData of timeline.data) {
+					const col = rowData.columns[pos.column];
+					rowData.columns.splice(pos.column, 1);
+					rowData.columns.splice(pos.column - 1, 0, col);
+				}
+
+				pos.column--;
+			}
+
+			return {timeline, focusedBlockPosition: pos};
+		});
+	}
+
+	public handleMoveColumnRight = () => {
+		this.setState(state => {
+			const timeline = cloneDeep(state.timeline)!;
+			const pos = {...state.focusedBlockPosition!};
+
+			if (pos.column < timeline.data[pos.row].columns.length - 1) {
+				for (const rowData of timeline.data) {
+					const col = rowData.columns[pos.column];
+					rowData.columns.splice(pos.column, 1);
+					rowData.columns.splice(pos.column + 1, 0, col);
+				}
+
+				pos.column++;
+			}
+
+			return {timeline, focusedBlockPosition: pos};
+		});
+	}
+
 	public render() {
 		const {classes, fullScreen, auth, isDragging} = this.props;
 		const {
@@ -1046,6 +1124,10 @@ class App extends React.Component<AppProps, State> {
 			);
 		}
 
+		const focusedBlock =
+			focusedBlockPos &&
+			timeline?.data[focusedBlockPos.row].columns[focusedBlockPos.column][focusedBlockPos.index];
+
 		const actions = [
 			{icon: MoveBlockUpIcon, onClick: this.handleMoveBlockUp},
 			{icon: MoveBlockDownIcon, onClick: this.handleMoveBlockDown},
@@ -1054,13 +1136,13 @@ class App extends React.Component<AppProps, State> {
 			{icon: RemoveBlockIcon, onClick: this.handleRemoveBlock},
 			{icon: IndentIcon, onClick: this.handleIndentBlock},
 			{icon: OutdentIcon, onClick: this.handleOutdentBlock},
-			{icon: AddTitleIcon},
-			{icon: RemoveTitleIcon},
-			{icon: AddBodyIcon},
-			{icon: RemoveBodyIcon},
+			{icon: AddTitleIcon, onClick: this.handleShowBlockTitle, disabled: focusedBlock?.showTitle},
+			{icon: RemoveTitleIcon, onClick: this.handleHideBlockTitle, disabled: !focusedBlock?.showTitle || !focusedBlock?.showBody},
+			{icon: AddBodyIcon, onClick: this.handleShowBlockBody, disabled: focusedBlock?.showBody},
+			{icon: RemoveBodyIcon, onClick: this.handleHideBlockBody, disabled: !focusedBlock?.showTitle || !focusedBlock?.showBody},
 			{icon: ColorChooserIcon, onClick: this.handleOpenColorPicker},
-			{icon: MoveColumnRightIcon},
-			{icon: MoveColumnLeftIcon},
+			{icon: MoveColumnLeftIcon, onClick: this.handleMoveColumnLeft},
+			{icon: MoveColumnRightIcon, onClick: this.handleMoveColumnRight},
 			{icon: MoveRowUpIcon},
 			{icon: MoveRowDownIcon},
 			{icon: AddColumnLeftIcon, onClick: this.handleAddColumnLeft},
@@ -1070,10 +1152,6 @@ class App extends React.Component<AppProps, State> {
 			{icon: RemoveColumnIcon},
 			{icon: RemoveRowIcon},
 		];
-
-		const focusedBlock =
-			focusedBlockPos &&
-			timeline?.data[focusedBlockPos.row].columns[focusedBlockPos.column][focusedBlockPos.index];
 
 		return (
 			<div className={cls(classes.root, {[classes.dragging]: isDragging})}>
@@ -1125,7 +1203,7 @@ class App extends React.Component<AppProps, State> {
 								<IconButton
 									key={idx}
 									style={{padding: '0.75rem'}}
-									disabled={!focusedBlockPos || !obj.onClick}
+									disabled={!focusedBlockPos || !obj.onClick || obj.disabled}
 									onClick={obj.onClick}
 								>
 									<img src={obj.icon} style={{width: '24px'}}/>
@@ -1176,7 +1254,7 @@ class App extends React.Component<AppProps, State> {
 												/>
 											) : (
 												<pre style={{opacity: rowData.title ? 1 : 0.57}}>
-													{rowData.title || `#${row + 1}`}
+													{(rowData.title || `#${row + 1}`) + ' '}
 												</pre>
 											)}
 										</div>
