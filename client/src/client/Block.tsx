@@ -247,10 +247,11 @@ interface State {
 }
 
 class Block extends React.PureComponent<Props, State> {
-	public state: State = {wWidth: 0, wHeight: 0, showDeleteDialog: false};
-
-	public titleRef = React.createRef<any>();
-	public bodyRef = React.createRef<any>();
+	public state: State = {
+		wWidth: 0,
+		wHeight: 0,
+		showDeleteDialog: false
+	};
 
 	public componentDidMount() {
 		window.addEventListener('resize', this.updateDimensions);
@@ -263,21 +264,6 @@ class Block extends React.PureComponent<Props, State> {
 
 	public updateDimensions = () => {
 		this.setState({wWidth: window.innerWidth, wHeight: window.innerHeight});
-	}
-
-	public focusBlock = () => {
-		const {block} = this.props;
-		if (block.showTitle) {
-			const textarea = this.titleRef.current;
-			if (textarea) {
-				textarea.focus();
-			}
-		} else {
-			const textarea = this.bodyRef.current;
-			if (textarea) {
-				textarea.focus();
-			}
-		}
 	}
 
 	public handleToggleDeleteDialog = (show: boolean) => () => {
@@ -298,6 +284,11 @@ class Block extends React.PureComponent<Props, State> {
 		onChange(position, prop, evt.target.value);
 	}
 
+	public fixTextareaCursorPosition = (evt: React.FocusEvent<HTMLTextAreaElement>) => {
+		const val = evt.target.value;
+		evt.target.setSelectionRange(val.length, val.length);
+	}
+
 	public render() {
 		const {
 			block,
@@ -312,12 +303,12 @@ class Block extends React.PureComponent<Props, State> {
 		let contentElem = (
 			<div
 				className={classes.content}
-				onClick={this.handleClick}
 				style={{
 					boxShadow: focused
 						? `0 0 0.2rem 0.1rem ${darken(block.color, 0.3)}`
 						: '0 0.1rem 0.1rem 0 rgba(0,0,0,0.2)'
 				}}
+				onClick={this.handleClick}
 			>
 				{block.showTitle && (
 					<div
@@ -327,11 +318,11 @@ class Block extends React.PureComponent<Props, State> {
 						{focused && (
 							<TextareaAutosize
 								className={classes.textarea}
-								ref={this.titleRef}
 								value={block.title}
 								onChange={this.getInputHandler('title')}
+								onFocus={this.fixTextareaCursorPosition}
 								spellCheck={false}
-								autoFocus
+								autoFocus={!block.showBody}
 							/>
 						)}
 						<pre className={classes.textarea}>
@@ -347,11 +338,11 @@ class Block extends React.PureComponent<Props, State> {
 						{focused && (
 							<TextareaAutosize
 								className={classes.textarea}
-								ref={this.bodyRef}
 								value={block.body}
 								onChange={this.getInputHandler('body')}
+								onFocus={this.fixTextareaCursorPosition}
 								spellCheck={false}
-								autoFocus={!block.showTitle}
+								autoFocus
 							/>
 						)}
 						<pre className={classes.textarea}>

@@ -481,7 +481,7 @@ class App extends React.Component<AppProps, State> {
 				onMoveBlock={this.handleDragBlock}
 			/>
 		),
-		{normalizer: (args: any) => args[2] ? Date.now() : JSON.stringify(args)}
+		{normalizer: (args: any) => args[3] ? Date.now() : JSON.stringify(args)}
 	);
 
 	public componentDidMount() {
