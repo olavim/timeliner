@@ -438,7 +438,7 @@ const previewBlock: BlockData = {
 };
 
 class App extends React.Component<AppProps, State> {
-	public listContainerRef = React.createRef<any>();
+	public contentRef = React.createRef<any>();
 	public listRef = React.createRef<any>();
 	public api: AxiosInstance;
 
@@ -526,7 +526,7 @@ class App extends React.Component<AppProps, State> {
 		if (!prevState.fontsLoaded && this.state.fontsLoaded) {
 			setTimeout(() => {
 				window.requestAnimationFrame(() => {
-					const elem = findDOMNode(this.listContainerRef.current) as HTMLElement;
+					const elem = findDOMNode(this.contentRef.current) as HTMLElement;
 					if (elem) {
 						elem.scrollTo(0, 0);
 					}
@@ -578,7 +578,7 @@ class App extends React.Component<AppProps, State> {
 
 	public handleExportTimeline = () => {
 		const timeline = this.state.timeline;
-		this.setDownloadData(`${timeline!.name || 'timeline'}.cbo`, JSON.stringify(timeline!.data));
+		this.setDownloadData(`${timeline!.name || 'timeline'}.cbt`, JSON.stringify(timeline!.data));
 	}
 
 	public setDownloadData = (filename: string, data: string | Blob) => {
@@ -683,12 +683,16 @@ class App extends React.Component<AppProps, State> {
 
 	public handleSave = debounce(async () => {
 		const timeline = this.state.timeline;
-		const {data} = await this.api.patch(`/timelines/${timeline!.id}`, pick(timeline, ['name', 'data']));
+		if (this.props.auth.isAuthenticated) {
+			const {data} = await this.api.patch(`/timelines/${timeline!.id}`, pick(timeline, ['name', 'data']));
 
-		localStorage.setItem('timeliner-data', JSON.stringify(data.timeline));
+			localStorage.setItem('timeliner-data', JSON.stringify(data.timeline));
 
-		if (!timeline!.id) {
-			this.setState({timeline: data.timeline});
+			if (!timeline!.id) {
+				this.setState({timeline: data.timeline});
+			}
+		} else {
+			localStorage.setItem('timeliner-data', JSON.stringify(timeline));
 		}
 	}, 500);
 
@@ -702,10 +706,8 @@ class App extends React.Component<AppProps, State> {
 
 	public handleDelete = async () => {
 		if (!this.props.auth.isAuthenticated) {
-			const timeline = {data: []};
-			return this.setState({timeline, showConfirmDialog: false, showDrawer: false}, () => {
-				localStorage.setItem('timeliner-data', JSON.stringify(timeline));
-			});
+			const timeline = {data: [{title: '', columns: [[]]}]};
+			return this.setState({timeline, showConfirmDialog: false, showDrawer: false}, this.handleSave);
 		}
 
 		const timeline = this.state.timeline;
@@ -773,7 +775,7 @@ class App extends React.Component<AppProps, State> {
 			const timeline = cloneDeep(state.timeline)!;
 			Object.assign(timeline.data[pos.row].columns[pos.column][pos.index], {[prop]: value});
 			return {timeline};
-		});
+		}, this.handleSave);
 	}
 
 	public handleClickBlock = (pos: BlockPosition) => {
@@ -793,7 +795,7 @@ class App extends React.Component<AppProps, State> {
 			const timeline = cloneDeep(state.timeline)!;
 			timeline.data[row].title = value;
 			return {timeline};
-		});
+		}, this.handleSave);
 	}
 
 	public handleDragBlock = (dragBlock: BlockData, dragPos: BlockPosition, hoverPos: BlockPosition) => {
@@ -827,7 +829,7 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			return {timeline};
-		});
+		}, this.handleSave);
 	}
 
 	public handleAddPreviewBlock = (pos: BlockPosition) => {
@@ -848,7 +850,7 @@ class App extends React.Component<AppProps, State> {
 			});
 
 			return {timeline, focusedBlockPosition: pos};
-		});
+		}, this.handleSave);
 	}
 
 	public handleAddPreviewRow = (evt: React.MouseEvent) => {
@@ -865,7 +867,7 @@ class App extends React.Component<AppProps, State> {
 			timeline.data.push({title: '', columns});
 
 			return {timeline, focusedBlockPosition: null, focusedRow: timeline.data.length - 1};
-		});
+		}, this.handleSave);
 	}
 
 	public handleAddBlockAbove = () => {
@@ -881,7 +883,7 @@ class App extends React.Component<AppProps, State> {
 			});
 
 			return {timeline, focusedBlockPosition: {...pos, index: pos.index - 1}};
-		});
+		}, this.handleSave);
 	};
 
 	public handleAddBlockBelow = () => {
@@ -897,7 +899,7 @@ class App extends React.Component<AppProps, State> {
 			});
 
 			return {timeline, focusedBlockPosition: {...pos, index: pos.index + 1}};
-		});
+		}, this.handleSave);
 	};
 
 	public handleMoveBlockUp = () => {
@@ -918,7 +920,7 @@ class App extends React.Component<AppProps, State> {
 			timeline.data[newPos.row].columns[newPos.column].splice(newPos.index, 0, focusedBlock);
 
 			return {timeline};
-		});
+		}, this.handleSave);
 	};
 
 	public handleMoveBlockDown = () => {
@@ -939,7 +941,7 @@ class App extends React.Component<AppProps, State> {
 			timeline.data[newPos.row].columns[newPos.column].splice(newPos.index, 0, focusedBlock);
 
 			return {timeline};
-		});
+		}, this.handleSave);
 	};
 
 	public handleRemoveBlock = () => {
@@ -949,7 +951,7 @@ class App extends React.Component<AppProps, State> {
 
 			timeline.data[pos.row].columns[pos.column].splice(pos.index, 1);
 			return {timeline};
-		});
+		}, this.handleSave);
 	};
 
 	public handleIndentBlock = () => {
@@ -961,7 +963,7 @@ class App extends React.Component<AppProps, State> {
 			timeline.data[pos.row].columns[pos.column][pos.index].indent = Math.min(10, indentation + 1);
 
 			return {timeline};
-		});
+		}, this.handleSave);
 	};
 
 	public handleOutdentBlock = () => {
@@ -973,7 +975,7 @@ class App extends React.Component<AppProps, State> {
 			timeline.data[pos.row].columns[pos.column][pos.index].indent = Math.max(0, indentation - 1);
 
 			return {timeline};
-		});
+		}, this.handleSave);
 	};
 
 	public handleAddRowAbove = () => {
@@ -988,7 +990,7 @@ class App extends React.Component<AppProps, State> {
 
 			timeline.data.splice(pos.row, 0, {title: '', columns});
 			return {timeline, focusedBlockPosition: null, focusedRow: pos.row};
-		});
+		}, this.handleSave);
 	};
 
 	public handleAddRowBelow = () => {
@@ -1003,7 +1005,7 @@ class App extends React.Component<AppProps, State> {
 
 			timeline.data.splice(pos.row + 1, 0, {title: '', columns});
 			return {timeline, focusedBlockPosition: null, focusedRow: pos.row + 1};
-		});
+		}, this.handleSave);
 	};
 
 	public handleAddColumnLeft = () => {
@@ -1016,7 +1018,7 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			return {timeline};
-		});
+		}, this.handleSave);
 	};
 
 	public handleAddColumnRight = () => {
@@ -1029,7 +1031,7 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			return {timeline};
-		});
+		}, this.handleSave);
 	};
 
 	public handleChangeBlockColor = (colorState: ColorState) => {
@@ -1039,7 +1041,7 @@ class App extends React.Component<AppProps, State> {
 
 			timeline.data[pos.row].columns[pos.column][pos.index].color = colorState.hex;
 			return {timeline};
-		});
+		}, this.handleSave);
 	}
 
 	public handleShowBlockTitle = () => {
@@ -1049,7 +1051,7 @@ class App extends React.Component<AppProps, State> {
 
 			timeline.data[pos.row].columns[pos.column][pos.index].showTitle = true;
 			return {timeline};
-		});
+		}, this.handleSave);
 	}
 
 	public handleShowBlockBody = () => {
@@ -1059,7 +1061,7 @@ class App extends React.Component<AppProps, State> {
 
 			timeline.data[pos.row].columns[pos.column][pos.index].showBody = true;
 			return {timeline};
-		});
+		}, this.handleSave);
 	}
 
 	public handleHideBlockTitle = () => {
@@ -1069,7 +1071,7 @@ class App extends React.Component<AppProps, State> {
 
 			timeline.data[pos.row].columns[pos.column][pos.index].showTitle = false;
 			return {timeline};
-		});
+		}, this.handleSave);
 	}
 
 	public handleHideBlockBody = () => {
@@ -1079,7 +1081,7 @@ class App extends React.Component<AppProps, State> {
 
 			timeline.data[pos.row].columns[pos.column][pos.index].showBody = false;
 			return {timeline};
-		});
+		}, this.handleSave);
 	}
 
 	public handleMoveColumnLeft = () => {
@@ -1098,7 +1100,7 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			return {timeline, focusedBlockPosition: pos};
-		});
+		}, this.handleSave);
 	}
 
 	public handleMoveColumnRight = () => {
@@ -1117,7 +1119,7 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			return {timeline, focusedBlockPosition: pos};
-		});
+		}, this.handleSave);
 	}
 
 	public handleMoveRowUp = () => {
@@ -1134,7 +1136,7 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			return {timeline, focusedBlockPosition: pos};
-		});
+		}, this.handleSave);
 	}
 
 	public handleMoveRowDown = () => {
@@ -1151,7 +1153,7 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			return {timeline, focusedBlockPosition: pos};
-		});
+		}, this.handleSave);
 	}
 
 	public handleDeleteColumn = () => {
@@ -1164,7 +1166,7 @@ class App extends React.Component<AppProps, State> {
 			}
 
 			return {timeline, focusedBlockPosition: null};
-		});
+		}, this.handleSave);
 	}
 
 	public handleDeleteRow = () => {
@@ -1175,7 +1177,7 @@ class App extends React.Component<AppProps, State> {
 			timeline.data.splice(pos.row, 1);
 
 			return {timeline, focusedBlockPosition: null};
-		});
+		}, this.handleSave);
 	}
 
 	public render() {
@@ -1314,7 +1316,7 @@ class App extends React.Component<AppProps, State> {
 							<img src={githubIcon} style={{height: '2.4rem'}}/>
 						</IconButton>
 					</div>
-					<div className={classes.content} ref={this.listContainerRef} onClick={this.handleDocumentClick}>
+					<div className={classes.content} ref={this.contentRef} onClick={this.handleDocumentClick}>
 						<div style={{flex: '0 0 1.3rem', backgroundColor: '#fafafa', width: '100%', position: 'sticky', top: 0, left: 0, zIndex: 1}}></div>
 						{timeline ? (
 							<>

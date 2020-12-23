@@ -296,6 +296,11 @@ class MenuDrawer extends React.Component<Props> {
 		});
 	}
 
+	public handleNew = () => {
+		this.props.onNew();
+		this.handleCloseConfirmDialog();
+	}
+
 	render() {
 		const {
 			classes,
@@ -304,7 +309,6 @@ class MenuDrawer extends React.Component<Props> {
 			fullScreen,
 			open,
 			onClose,
-			onNew,
 			onImport,
 			onExportTimeline,
 			onExportText
@@ -352,9 +356,9 @@ class MenuDrawer extends React.Component<Props> {
 					<ListItem button className={classes.drawerItem} onClick={onExportTimeline}>
 						<ListItemText primary="Export Timeline" disableTypography />
 					</ListItem>
-					<ListItem button className={classes.drawerItem} onClick={this.handleOpenPDFDialog}>
+					{/* <ListItem button className={classes.drawerItem} onClick={this.handleOpenPDFDialog}>
 						<ListItemText primary="Export PDF" disableTypography />
-					</ListItem>
+					</ListItem> */}
 					<ListItem button className={classes.drawerItem} onClick={onExportText}>
 						<ListItemText primary="Export Text" disableTypography />
 					</ListItem>
@@ -376,7 +380,7 @@ class MenuDrawer extends React.Component<Props> {
 						<Button onClick={this.handleCloseConfirmDialog} color="primary" className={classes.dialogButton}>
 							Cancel
 						</Button>
-						<Button onClick={onNew} color="primary" className={classes.dialogButton} autoFocus>
+						<Button onClick={this.handleNew} color="primary" className={classes.dialogButton} autoFocus>
 							Create
 						</Button>
 					</DialogActions>
