@@ -8,8 +8,6 @@ export default () => {
 
 	const BROWSER_ENV_PREFIX = 'BROWSER_';
 
-	app.use(expressStaticGzip(path.resolve(distFolder, 'client'), {index: false}));
-
 	app.get('/env.js', (_req, res) => {
 		/* Transform environment variables that start with BROWSER_ENV_PREFIX into a
 		 * `key1:env1,key2:env2` string.
@@ -20,6 +18,8 @@ export default () => {
 			.join(',');
 		res.end(`window.env = {${envStr}}`);
 	});
+
+	app.use(expressStaticGzip(path.resolve(distFolder, 'client'), {index: false}));
 
 	app.get(/^(\/.*)?$/, (_req, res) => {
 		res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
