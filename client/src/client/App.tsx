@@ -21,6 +21,7 @@ import withMobileDialog, {InjectedProps as WithMobileDialog} from '@material-ui/
 import runtime from 'serviceworker-webpack-plugin/lib/runtime';
 import WebFont from 'webfontloader';
 import FileSaver from 'file-saver';
+import JSZip from 'jszip';
 import * as _memoize from 'memoizee';
 import MenuIcon from '@material-ui/icons/Menu';
 import FileIcon from '@material-ui/icons/InsertDriveFile';
@@ -579,6 +580,41 @@ class App extends React.Component<AppProps, State> {
 	public handleExportTimeline = () => {
 		const timeline = this.state.timeline;
 		this.setDownloadData(`${timeline!.name || 'timeline'}.cbt`, JSON.stringify(timeline!.data));
+	}
+
+	public handleExportOutlines = () => {
+		const rows = this.state.timeline!.data;
+		const outlines: BlockData[][] = [];
+
+		for (let i = 0; i < rows.length; i++) {
+			for (let j = 0; j < rows[i].columns.length; j++) {
+				if (!outlines[j]) {
+					outlines[j] = [];
+				}
+
+				outlines[j].push({
+					id: i,
+					title: rows[i].title || `#${i + 1}`,
+					body: '',
+					color: '#ffffff',
+					indent: 0,
+					showTitle: true,
+					showBody: false
+				});
+
+				outlines[j].push(...rows[i].columns[j]);
+			}
+		}
+
+		const zip = new JSZip();
+		for (let i = 0; i < outlines.length; i++) {
+			const filename = `column${String(i).padStart(3, '0')}.cbo`;
+			zip.file(filename, JSON.stringify(outlines[i]));
+		}
+
+		zip.generateAsync({type: 'blob'}).then(content => {
+			this.setDownloadData('outlines.zip', content);
+		});
 	}
 
 	public setDownloadData = (filename: string, data: string | Blob) => {
@@ -1251,6 +1287,7 @@ class App extends React.Component<AppProps, State> {
 						onNew={this.handleDelete}
 						onImport={this.handleImportTimeline}
 						onExportTimeline={this.handleExportTimeline}
+						onExportOutlines={this.handleExportOutlines}
 						onExportPDF={this.handleExportPDF}
 						onExportText={this.handleExportText}
 					/>
