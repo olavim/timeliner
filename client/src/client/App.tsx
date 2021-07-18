@@ -953,9 +953,10 @@ class App extends React.Component<AppProps, State> {
 				newPos.index = timeline.data[newPos.row].columns[newPos.column].length;
 			}
 
+			timeline.data[pos.row].columns[pos.column].splice(pos.index, 1);
 			timeline.data[newPos.row].columns[newPos.column].splice(newPos.index, 0, focusedBlock);
 
-			return {timeline};
+			return {timeline, focusedBlockPosition: newPos};
 		}, this.handleSave);
 	};
 
@@ -974,9 +975,10 @@ class App extends React.Component<AppProps, State> {
 				newPos.index = 0;
 			}
 
+			timeline.data[pos.row].columns[pos.column].splice(pos.index, 1);
 			timeline.data[newPos.row].columns[newPos.column].splice(newPos.index, 0, focusedBlock);
 
-			return {timeline};
+			return {timeline, focusedBlockPosition: newPos};
 		}, this.handleSave);
 	};
 
